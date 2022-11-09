@@ -1,0 +1,13 @@
+---
+version: '3.1'
+services:
+  mybench:
+    image: docker.io/mysql/mysql-server
+    container_name: mybench-mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=1
+      - MYSQL_ROOT_HOST=%
+    ports:
+      - 3306:3306

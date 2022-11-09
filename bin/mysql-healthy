@@ -1,0 +1,6 @@
+#!/bin/bash
+if [[ $(podman ps -a -f health=healthy -f name=mybench-mysql -q) ]]; then
+    exit 0
+else
+    exit 1
+fi

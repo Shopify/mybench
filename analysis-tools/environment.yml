@@ -1,0 +1,10 @@
+name: mybench
+channels:
+  - defaults
+dependencies:
+  - python=3
+  - numpy
+  - jupyterlab
+  - matplotlib
+  - scipy
+  - pandas

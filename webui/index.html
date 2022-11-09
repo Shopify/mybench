@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>mybench</title>
+  <script src="static/js/vendor/vega.5.21.0.js"></script>
+  <script src="static/js/vendor/vega-lite.5.2.0.js"></script>
+  <script src="static/js/vendor/vega-embed.6.20.2.js"></script>
+  <style>
+    .plot {
+      width: 49.5%;
+    }
+  </style>
+</head>
+
+<body>
+  <h1 style="text-align: center;"><code>mybench</code> Status</h1>
+
+  <div id="overall-rate-vis" class="plot"></div>
+  <div id="overall-latency-percentile-vis" class="plot"></div>
+
+  <div id="event-rate-vis" class="plot"></div>
+  <div id="mean-latency-vis" class="plot"></div>
+
+  <div id="event-rate-pct-vis" class="plot"></div>
+  <div id="max-latency-vis" class="plot"></div>
+
+  <div id="histograms">
+  </div>
+  <script src="static/js/app.js"></script>
+</body>
+
+</html>

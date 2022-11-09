@@ -1,0 +1,6 @@
+#!/bin/bash
+podman-compose up -d
+until bin/mysql-healthy; do
+    echo "Waiting for mysql to finish starting..."
+    sleep 10
+done

@@ -1,0 +1,4 @@
+.vscode
+.ipynb_checkpoints
+/build
+data.sqlite

@@ -1,0 +1,11 @@
+name: mybench
+
+up:
+  - go: 1.18.3
+  # Why not isogun?  because I was having problems with >10 connections
+  - podman
+  - custom:
+      name: Start services
+      met?: bin/mysql-healthy
+      meet: bin/start-services
+      down: podman-compose down
