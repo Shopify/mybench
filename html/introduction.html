@@ -1,0 +1,181 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>What is mybench? &#8212; mybench  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Getting started" href="getting-started.html" />
+    <link rel="prev" title="mybench documentation" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="what-is-mybench">
+<span id="introduction"></span><h1>What is mybench?<a class="headerlink" href="#what-is-mybench" title="Permalink to this headline">¶</a></h1>
+<p>mybench is a high-performance, massively-parallel library primarily for
+building database benchmarks in Go. By default, mybench supports MySQL. While
+not done, it should be possible to use it for other databases (or even
+non-databases).</p>
+<p>The main features of mybench includes:</p>
+<ul class="simple">
+<li><strong>Precision event rate control</strong>: the rate at which events are run is accurately
+and precisely maintained by a discretized-time rate controller.</li>
+<li><strong>Workload parallelization</strong>: a single workload can be parallelized into multiple
+goroutines, each with its own connection and rate controller.</li>
+<li><strong>Workload mixing</strong>: multiple workloads can be mixed with arbitrary ratios
+and run as a single benchmark. Data are collected from each workload
+individually can be visualized either in aggregate or individually.</li>
+<li><strong>Real-time monitoring UI</strong>: mybench exposes a web interface that plots the
+throughput and latency time series while the benchmark is running in
+real-time. This enables faster feedback loop for writing and validating
+benchmarks.</li>
+<li><strong>SQLite-based data logging</strong>: mybench writes the throughput and latency time
+series into a SQLite database. Multiple benchmark runs can share the same
+database file. The standard and single-file approach to data logging allows
+for better interoperability with other tools as well as for easier data
+sharing.</li>
+<li><strong>Post-processing scripts</strong>: mybench includes a set of scripts that creates
+standard visualizations with the data logged in the SQLite database file.
+Multiple benchmark runs can be compared with these scripts.</li>
+<li><strong>Random data generator with existing data sampling</strong>: mybench includes a
+number of builtin random number generators that also have the capability to
+sample from existing data so that the <code class="docutils literal notranslate"><span class="pre">WHERE</span></code> clause of <code class="docutils literal notranslate"><span class="pre">SELECT</span></code>
+statements can be more easily constructed. However, this sampling is not
+perfect for the moment and can result in non-existing data being sampled.</li>
+</ul>
+<div class="section" id="comparisons-with-other-tools">
+<h2>Comparisons with other tools<a class="headerlink" href="#comparisons-with-other-tools" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="https://github.com/akopytov/sysbench">sysbench</a> is a similar database and
+system benchmark tool that allows custom benchmarks to be developed with Lua.
+It has a long history in the database benchmark community and is one of the
+de facto standards dating all the way back to 2004.<ul>
+<li>mybench has significantly more accurate event rate control than sysbench
+based on our internal testing.</li>
+<li>mybench collects more data than sysbench during the benchmark run. In
+addition to being able to visualize these data with plots in real-time,
+mybench also includes more tools to analyze this data after the benchmark
+run is complete.</li>
+<li>It is easier to define a multi-workload benchmark in mybench than in
+sysbench, as workloads have to be mixed manually with Lua in sysbench.
+Further, mybench also collects workload-specific data, which helps with
+post-benchmark analysis.</li>
+</ul>
+</li>
+<li><a class="reference external" href="https://github.com/cmu-db/benchbase">BenchBase</a> is a multi-DBMS benchmark
+framework written in Java. Using BenchBase, benchmarks can be created for
+multiple databases and comparisons can be made across databases.<ul>
+<li>Both mybench and BenchBase has very accurate rate control, although they
+are implemented differently.</li>
+<li>Data gathered by mybench can be monitored in real-time via the built-in
+HTTP server whereas data gathered from BenchBase can only be visualized
+during post processing as of this writing.</li>
+<li>BenchBase is more focused around databases (through heavy use of JDBC)
+while mybench can in principle work with non-database workloads.</li>
+<li>BenchBase can evolve the ratio of workload mixtures over the duration of
+the benchmark, while mybench cannot do this natively.</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">mybench</a></h1>
+
+
+
+<p class="blurb">A high-performance framework for rapid prototyping of benchmarks</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=Shopify&repo=mybench&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">What is mybench?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#comparisons-with-other-tools">Comparisons with other tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="writing-a-benchmark.html">Tutorial: Writing a custom benchmark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="detailed-design-doc.html">Detailed design documentation</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">mybench documentation</a></li>
+      <li>Next: <a href="getting-started.html" title="next chapter">Getting started</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022 - Present, Shopify Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="_sources/introduction.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

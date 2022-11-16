@@ -1,0 +1,152 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Getting started &#8212; mybench  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Tutorial: Writing a custom benchmark" href="writing-a-benchmark.html" />
+    <link rel="prev" title="What is mybench?" href="introduction.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="getting-started">
+<span id="id1"></span><h1>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<p>This guide walks you through installing and running an example benchmark
+implemented with mybench.</p>
+<p>To download and compile <code class="docutils literal notranslate"><span class="pre">examplebench</span></code>:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> git clone https://github.com/Shopify/mybench.git
+<span class="gp">$</span> <span class="nb">cd</span> mybench
+<span class="gp">$</span> make examplebench
+</pre></div>
+</div>
+<p>This will compile <code class="docutils literal notranslate"><span class="pre">examplebench</span></code> into a folder called <code class="docutils literal notranslate"><span class="pre">build</span></code>. To run
+<code class="docutils literal notranslate"><span class="pre">examplebench</span></code>, you must first seed the database:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> build/examplebench <span class="se">\</span>
+   --host<span class="o">=</span>mysql.host <span class="se">\</span>
+   --user<span class="o">=</span>username <span class="se">\</span>
+   --pass<span class="o">=</span>password <span class="se">\</span>
+   --load
+</pre></div>
+</div>
+<p>You need to replace the <code class="docutils literal notranslate"><span class="pre">mysql.host</span></code> with the host or IP address of MySQL,
+<code class="docutils literal notranslate"><span class="pre">username</span></code> with the username you can connect with, and <code class="docutils literal notranslate"><span class="pre">password</span></code> with the
+password you can connect to. This will load the database with 1 million rows of
+data (in the table <code class="docutils literal notranslate"><span class="pre">example_table</span></code> in the database <code class="docutils literal notranslate"><span class="pre">mybench</span></code>).</p>
+<p>Once this is done, you can then run the benchmark:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> build/examplebench <span class="se">\</span>
+   --host<span class="o">=</span>mysql.host <span class="se">\</span>
+   --user<span class="o">=</span>username <span class="se">\</span>
+   --pass<span class="o">=</span>password <span class="se">\</span>
+   --bench <span class="se">\</span>
+   --multiplier<span class="o">=</span><span class="m">100</span>
+</pre></div>
+</div>
+<p>The default event rate for examplebench is 100 event/s split evenly between its
+two workloads. The <code class="docutils literal notranslate"><span class="pre">--multiplier=100</span></code> option multiplies the event rate by
+100, resulting in an overall event rate of 10,000 events/s. You can then go to
+<a class="reference external" href="https://localhost:8005">https://localhost:8005</a> to see the real-time monitoring UI. This should show
+something similar to:</p>
+<img alt="_images/screenshot.png" src="_images/screenshot.png" />
+<p>By default, the test will go on indefinitely (a fixed duration can be specified
+using a config option). Pressing <code class="docutils literal notranslate"><span class="pre">CTRL+C</span></code> will abort the test. The data will
+be saved into a file called <code class="docutils literal notranslate"><span class="pre">data.sqlite</span></code>.</p>
+<p>TODO: a bit more about how to use the post processing scripts.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">mybench</a></h1>
+
+
+
+<p class="blurb">A high-performance framework for rapid prototyping of benchmarks</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=Shopify&repo=mybench&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">What is mybench?</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="writing-a-benchmark.html">Tutorial: Writing a custom benchmark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="detailed-design-doc.html">Detailed design documentation</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="introduction.html" title="previous chapter">What is mybench?</a></li>
+      <li>Next: <a href="writing-a-benchmark.html" title="next chapter">Tutorial: Writing a custom benchmark</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022 - Present, Shopify Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="_sources/getting-started.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
