@@ -1,24 +1,26 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html lang="en">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
     <title>Detailed design documentation &#8212; mybench  documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="prev" title="Tutorial: Writing a custom benchmark" href="writing-a-benchmark.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
   
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
@@ -28,15 +30,17 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
+          
+
           <div class="body" role="main">
             
-  <div class="section" id="detailed-design-documentation">
-<span id="detailed-design-doc"></span><h1>Detailed design documentation<a class="headerlink" href="#detailed-design-documentation" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="mybench-a-high-performance-framework-for-rapid-prototyping-of-benchmarks">
-<h2>mybench: a high-performance framework for rapid prototyping of benchmarks<a class="headerlink" href="#mybench-a-high-performance-framework-for-rapid-prototyping-of-benchmarks" title="Permalink to this headline">¶</a></h2>
+  <section id="detailed-design-documentation">
+<span id="detailed-design-doc"></span><h1>Detailed design documentation<a class="headerlink" href="#detailed-design-documentation" title="Permalink to this heading">¶</a></h1>
+<section id="mybench-a-high-performance-framework-for-rapid-prototyping-of-benchmarks">
+<h2>mybench: a high-performance framework for rapid prototyping of benchmarks<a class="headerlink" href="#mybench-a-high-performance-framework-for-rapid-prototyping-of-benchmarks" title="Permalink to this heading">¶</a></h2>
 <p>November 2022</p>
-<div class="section" id="introduction">
-<h3>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h3>
+<section id="introduction">
+<h3>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h3>
 <p>Database performance analysis is a difficult and time-consuming aspect of the
 maintenance and evolution of today’s cloud-based applications. One common
 method of conducting performance analysis is to benchmark the database with a
@@ -57,7 +61,7 @@ simulated data sets and workloads must be modeled and benchmarked to
 properly gain insights into the performance of the application as a whole. The
 benchmark tool must therefore provide an easy-to-use and ergonomic API to
 model these data sets and workloads. This is termed as the <em>pre-processing</em>
-stage of the benchmark <a class="footnote-reference" href="#fpreprocessing" id="id1">[1]</a>.</p>
+stage of the benchmark <a class="footnote-reference brackets" href="#fpreprocessing" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>.</p>
 <p>Following the pre-processing stage, the simulated workload must be executed by
 the benchmarking tool in the processing stage. One technique to discover the
 limits of the system is to drive the workload with increasing rate until
@@ -77,78 +81,77 @@ values collected through the benchmark should be visualized in a standardized
 manner such that results from different benchmarks can be more easily compared. The
 benchmark tool should thus provide a standard set of visualization and analysis
 tool to speed up the interpretation of the benchmark results.</p>
-<p>While a number of database benchmark tools such as sysbench <a class="reference internal" href="#sysbench01" id="id2">[SYSBENCH01]</a>,
-benchbase <a class="reference internal" href="#benchbase01" id="id3">[BENCHBASE01]</a>, and linkbench <a class="reference internal" href="#linkbench01" id="id4">[LINKBENCH01]</a>, none of these tools
+<p>While a number of database benchmark tools such as sysbench <a class="reference internal" href="#sysbench01" id="id2"><span>[SYSBENCH01]</span></a>,
+benchbase <a class="reference internal" href="#benchbase01" id="id3"><span>[BENCHBASE01]</span></a>, and linkbench <a class="reference internal" href="#linkbench01" id="id4"><span>[LINKBENCH01]</span></a>, none of these tools
 fulfill all the requirements outlined above. The work presented here is our
 attempt to solve all of these problems in a single software package we named
 “mybench”.</p>
-<table class="docutils footnote" frame="void" id="fpreprocessing" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>The authors borrow the terminology of “pre-processing”,
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="fpreprocessing" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>The authors borrow the terminology of “pre-processing”,
 “processing”, and “post-processing” from solid and fluid dynamic
 simulations. In those fields, pre-processing is the stage where engineers
 create the model that represents the physical system being simulated,
 processing is the stage when the calculations are made, and post-processing
 is the stage where analysis are performed on the resulting data. In that
 industry, software packages typically include software for pre-processing
-and post-processing to help engineers obtain results faster.</td></tr>
-</tbody>
-</table>
-<table class="docutils citation" frame="void" id="sysbench01" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[SYSBENCH01]</a></td><td><a class="reference external" href="https://github.com/akopytov/sysbench">https://github.com/akopytov/sysbench</a></td></tr>
-</tbody>
-</table>
-<table class="docutils citation" frame="void" id="benchbase01" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[BENCHBASE01]</a></td><td><a class="reference external" href="https://github.com/cmu-db/benchbase">https://github.com/cmu-db/benchbase</a></td></tr>
-</tbody>
-</table>
-<table class="docutils citation" frame="void" id="linkbench01" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id4">[LINKBENCH01]</a></td><td><a class="reference external" href="https://github.com/facebookarchive/linkbench">https://github.com/facebookarchive/linkbench</a></td></tr>
-</tbody>
-</table>
+and post-processing to help engineers obtain results faster.</p>
+</aside>
+</aside>
+<div role="list" class="citation-list">
+<div class="citation" id="sysbench01" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">SYSBENCH01</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://github.com/akopytov/sysbench">https://github.com/akopytov/sysbench</a></p>
 </div>
-<div class="section" id="requirements">
-<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<div class="citation" id="benchbase01" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">BENCHBASE01</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://github.com/cmu-db/benchbase">https://github.com/cmu-db/benchbase</a></p>
+</div>
+<div class="citation" id="linkbench01" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">LINKBENCH01</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://github.com/facebookarchive/linkbench">https://github.com/facebookarchive/linkbench</a></p>
+</div>
+</div>
+</section>
+<section id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading">¶</a></h3>
 <p>The following requirements were developed during the design process of mybench:</p>
 <ul class="simple">
-<li>The software should get out of the user’s way where possible.<ul>
-<li>Benchmark prototyping is convenient and ergonomic to encourage users to
-develop custom benchmarks.</li>
-<li>Running a benchmark is convenient and ergonomic.</li>
+<li><p>The software should get out of the user’s way where possible.</p>
+<ul>
+<li><p>Benchmark prototyping is convenient and ergonomic to encourage users to
+develop custom benchmarks.</p></li>
+<li><p>Running a benchmark is convenient and ergonomic.</p></li>
 </ul>
 </li>
-<li>Executing mybench-internal code should not impact the throughput and latency
-of the workloads.</li>
-<li>Multiple workloads can be mixed to better emulate production traffic where
-multiple groups of query patterns exist.</li>
-<li>Accurate and precise control of the query (a.k.a. event) rates for each
-workload.</li>
-<li>Live monitoring of throughput and latency statistics.</li>
-<li>Logging of throughput and latency time series during the benchmark run in
-standardized data formats.</li>
-<li>Standardized plots to visualize the results post-benchmarking.</li>
+<li><p>Executing mybench-internal code should not impact the throughput and latency
+of the workloads.</p></li>
+<li><p>Multiple workloads can be mixed to better emulate production traffic where
+multiple groups of query patterns exist.</p></li>
+<li><p>Accurate and precise control of the query (a.k.a. event) rates for each
+workload.</p></li>
+<li><p>Live monitoring of throughput and latency statistics.</p></li>
+<li><p>Logging of throughput and latency time series during the benchmark run in
+standardized data formats.</p></li>
+<li><p>Standardized plots to visualize the results post-benchmarking.</p></li>
 </ul>
-</div>
-<div class="section" id="mybench-design">
-<h3>mybench design<a class="headerlink" href="#mybench-design" title="Permalink to this headline">¶</a></h3>
-<div class="section" id="internal-architecture">
-<h4>Internal architecture<a class="headerlink" href="#internal-architecture" title="Permalink to this headline">¶</a></h4>
+</section>
+<section id="mybench-design">
+<h3>mybench design<a class="headerlink" href="#mybench-design" title="Permalink to this heading">¶</a></h3>
+<section id="internal-architecture">
+<h4>Internal architecture<a class="headerlink" href="#internal-architecture" title="Permalink to this heading">¶</a></h4>
 <p>mybench is a Golang library that enables developers to create, run, and analyze
 benchmarks. To minimize the efforts required to define a benchmark, the
 top-level API is kept small and much of the complexities of running a benchmark
 is implemented within mybench. Figure 1 depicts the internal architecture of
 mybench.</p>
-<div class="figure" id="id9">
-<img alt="_images/architecture.svg" src="_images/architecture.svg" /><p class="caption"><span class="caption-text">Figure 1: mybench architecture showing 3 <code class="docutils literal notranslate"><span class="pre">Workload</span></code>s each running with two
-<code class="docutils literal notranslate"><span class="pre">BenchmarkWorker</span></code>s</span></p>
-</div>
+<figure class="align-default" id="id9">
+<img alt="_images/architecture.svg" src="_images/architecture.svg" /><figcaption>
+<p><span class="caption-text">Figure 1: mybench architecture showing 3 <code class="docutils literal notranslate"><span class="pre">Workload</span></code>s each running with two
+<code class="docutils literal notranslate"><span class="pre">BenchmarkWorker</span></code>s</span><a class="headerlink" href="#id9" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 <p>mybench defines a <strong>Benchmark</strong> to consists of multiple <strong>Workloads</strong>. At least
 one Workload must be defined for a Benchmark. Each Workload is defined by its
 <code class="docutils literal notranslate"><span class="pre">Event</span></code> callback, within which contains the code being benchmarked. For
@@ -192,9 +195,9 @@ can be monitored.</p>
 <p>While mybench is primarily designed to benchmark MySQL, its architecture is
 flexible enough to benchmark arbitrary database and non-database systems.
 However, these are not uses cases that have been thoroughly tested for now.</p>
-</div>
-<div class="section" id="rate-control-via-temporal-discretization-looper">
-<h4>Rate control via “temporal-discretization” looper<a class="headerlink" href="#rate-control-via-temporal-discretization-looper" title="Permalink to this headline">¶</a></h4>
+</section>
+<section id="rate-control-via-temporal-discretization-looper">
+<h4>Rate control via “temporal-discretization” looper<a class="headerlink" href="#rate-control-via-temporal-discretization-looper" title="Permalink to this heading">¶</a></h4>
 <p>A common approach to discover the limits of the database is by performing a
 sequence of benchmarks with increasing event rates. When the database is
 overloaded, the event rate will plateau and the latency will stagnate. To
@@ -217,11 +220,13 @@ depicts this sampling process with a uniform event arrival distribution. After
 calling <code class="docutils literal notranslate"><span class="pre">Event</span></code> in the inner loop, the looper sleeps until the next scheduled
 wake-up time according to the outer loop frequency, when it then repeats the
 same process for the next iteration.</p>
-<div class="figure" id="id10">
-<img alt="_images/looper.svg" src="_images/looper.svg" /><p class="caption"><span class="caption-text">Figure 2: The temporal-discretization scheme mybench rate controller a) in
+<figure class="align-default" id="id10">
+<img alt="_images/looper.svg" src="_images/looper.svg" /><figcaption>
+<p><span class="caption-text">Figure 2: The temporal-discretization scheme mybench rate controller a) in
 normal operating circumstances and b) when the events are too slow to keep at
-a desired event rate. Each box is an <code class="docutils literal notranslate"><span class="pre">Event</span></code> call.</span></p>
-</div>
+a desired event rate. Each box is an <code class="docutils literal notranslate"><span class="pre">Event</span></code> call.</span><a class="headerlink" href="#id10" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 <p>In cases where <code class="docutils literal notranslate"><span class="pre">Event</span></code> call durations are too long to maintain a particular
 desired event rate, the looper will detect this overrun and switch into an
 overload mode (Figure 2b) where each outer loop iteration only calls <code class="docutils literal notranslate"><span class="pre">Event</span></code>
@@ -229,7 +234,7 @@ once. The sleep between successive outer loop iterations is also removed to
 maximize the event rate. The looper detects this overrun effectively by tracking
 the number of events it should have executed based on the desired event rate
 since the start of the run and compare it against the number of events it has
-actually executed <a class="footnote-reference" href="#flooperoverload" id="id5">[2]</a>. If the number of events executed is lower
+actually executed <a class="footnote-reference brackets" href="#flooperoverload" id="id5" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>. If the number of events executed is lower
 than the number of events it should have executed, the looper switches into the
 overload mode. If at any point the actual number of events executed catches
 up with the expected number of events, the looper will switch back into its
@@ -237,19 +242,19 @@ normal mode where events are batched. This system allows the looper to maintain
 the average event rate over a long period of time in cases where the <code class="docutils literal notranslate"><span class="pre">Event</span></code>
 call duration momentarily increases beyond the threshold at which the desired
 event rate could no longer be sustained.</p>
-<table class="docutils footnote" frame="void" id="flooperoverload" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id5">[2]</a></td><td>This is actually implemented slightly differently in the
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="flooperoverload" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">2</a><span class="fn-bracket">]</span></span>
+<p>This is actually implemented slightly differently in the
 code. The code currently implements something effectively similar but may need
-to be updated to this description to be more correct. This is a TODO.</td></tr>
-</tbody>
-</table>
-</div>
-<div class="section" id="high-performance-data-logging-via-double-buffering">
-<h4>High-performance data logging via double buffering<a class="headerlink" href="#high-performance-data-logging-via-double-buffering" title="Permalink to this headline">¶</a></h4>
+to be updated to this description to be more correct. This is a TODO.</p>
+</aside>
+</aside>
+</section>
+<section id="high-performance-data-logging-via-double-buffering">
+<h4>High-performance data logging via double buffering<a class="headerlink" href="#high-performance-data-logging-via-double-buffering" title="Permalink to this heading">¶</a></h4>
 <p>The throughput and latency values of the <code class="docutils literal notranslate"><span class="pre">Event</span></code> calls are recorded into an HDR
-histogram <a class="reference internal" href="#hdrhist01" id="id6">[HDRHIST01]</a>, which is a data structure that can accurately track
+histogram <a class="reference internal" href="#hdrhist01" id="id6"><span>[HDRHIST01]</span></a>, which is a data structure that can accurately track
 histogram distributions with low memory and CPU overheads. Each
 <code class="docutils literal notranslate"><span class="pre">BenchmarkWorker</span></code> records the latency value of each <code class="docutils literal notranslate"><span class="pre">Event</span></code> call in its own
 instance of the HDR histogram, which is embedded the <code class="docutils literal notranslate"><span class="pre">OnlineHistogram</span></code> struct
@@ -263,7 +268,7 @@ to the main event loop.  Further, as mybench can simultaneously run hundreds of
 <code class="docutils literal notranslate"><span class="pre">BenchmarkWorker</span></code> goroutines each with its own instance of
 <code class="docutils literal notranslate"><span class="pre">OnlineHistogram</span></code>, the time required to access all <code class="docutils literal notranslate"><span class="pre">OnlineHistogram</span></code>
 instances must be short enough to not bias the calculation for the overall
-throughput of the benchmark <a class="footnote-reference" href="#fsnapshot" id="id7">[3]</a>.</p>
+throughput of the benchmark <a class="footnote-reference brackets" href="#fsnapshot" id="id7" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>.</p>
 <p>To satisfy these requirements, <code class="docutils literal notranslate"><span class="pre">OnlineHistogram</span></code> is implemented as a double
 buffer of the underlying HDR histogram objects. Figure 3 shows this double
 buffer in operation. While the benchmark loop runs, the worker writes to the
@@ -279,12 +284,14 @@ from the HDR histogram residing in the now-inactive slot 1. After data from all
 <code class="docutils literal notranslate"><span class="pre">BenchmarkWorker</span></code>s are read, the data logger resets the histograms in the
 inactive slots to a zero state such that they can be reused following the next
 swap.</p>
-<div class="figure" id="id11">
-<img alt="_images/doublebuf.svg" src="_images/doublebuf.svg" /><p class="caption"><span class="caption-text">Figure 3: <code class="docutils literal notranslate"><span class="pre">OnlineHistogram</span></code> as it is a) being written to while the data
+<figure class="align-default" id="id11">
+<img alt="_images/doublebuf.svg" src="_images/doublebuf.svg" /><figcaption>
+<p><span class="caption-text">Figure 3: <code class="docutils literal notranslate"><span class="pre">OnlineHistogram</span></code> as it is a) being written to while the data
 logger is idling; b) performing the swap when the data logger takes a
 data snapshot for all <code class="docutils literal notranslate"><span class="pre">BenchmarkWorker</span></code>s; and c) being written to after
-the swap and while the data logger reads from the inactive slot.</span></p>
-</div>
+the swap and while the data logger reads from the inactive slot.</span><a class="headerlink" href="#id11" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 <p>Once the data is collected, the per-workload and aggregate throughput and
 latency data are written into a SQLite database on disk. Each benchmark run
 occupies a single table in the SQLite database. Meta information about the
@@ -292,16 +299,16 @@ benchmark run, such as the benchmark start and stop time, is written to a table
 named <code class="docutils literal notranslate"><span class="pre">meta</span></code>. The choice of a SQLite database allows data from a series of
 benchmark runs to be stored in a single file, which can simplify the transport,
 storage, and post-processing of the data.</p>
-<table class="docutils citation" frame="void" id="hdrhist01" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id6">[HDRHIST01]</a></td><td><a class="reference external" href="http://hdrhistogram.org/">http://hdrhistogram.org/</a></td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="fsnapshot" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id7">[3]</a></td><td>Throughput is calculated as number of events divided by the
+<div role="list" class="citation-list">
+<div class="citation" id="hdrhist01" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id6">HDRHIST01</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="http://hdrhistogram.org/">http://hdrhistogram.org/</a></p>
+</div>
+</div>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="fsnapshot" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id7">3</a><span class="fn-bracket">]</span></span>
+<p>Throughput is calculated as number of events divided by the
 elapsed time. Number of events is calculated by summing the event count in
 all <code class="docutils literal notranslate"><span class="pre">OnlineHistogram</span></code> instances. The elapsed time is calculated as the time
 difference between two subsequent sampling of all <code class="docutils literal notranslate"><span class="pre">OnlineHistogram</span></code>
@@ -309,12 +316,12 @@ instances. If the time required to read all <code class="docutils literal notran
 a large fraction of the elapsed time between two subsequent
 <code class="docutils literal notranslate"><span class="pre">OnlineHistogram</span></code> sampling, this can introduce significant bias in the
 calculated throughput, as both numerator and the denominator will be affected
-by the passage of time.</td></tr>
-</tbody>
-</table>
-</div>
-<div class="section" id="random-data-generation">
-<h4>Random data generation<a class="headerlink" href="#random-data-generation" title="Permalink to this headline">¶</a></h4>
+by the passage of time.</p>
+</aside>
+</aside>
+</section>
+<section id="random-data-generation">
+<h4>Random data generation<a class="headerlink" href="#random-data-generation" title="Permalink to this heading">¶</a></h4>
 <p>Database benchmarks require the generation of random data. Similar to other
 benchmark systems, mybench also provides a number of builtin data generators
 that can generate data with different types and distributions. All data
@@ -336,67 +343,72 @@ every worker, the global mutex protecting a global random source creates a
 significant performance bottleneck. This is resolved in mybench as data
 generators uses an non-protected, gouroutine-local random source stored on each
 <code class="docutils literal notranslate"><span class="pre">BenchmarkWorker</span></code>.</p>
-</div>
-<div class="section" id="live-monitoring-user-interface">
-<h4>Live monitoring user interface<a class="headerlink" href="#live-monitoring-user-interface" title="Permalink to this headline">¶</a></h4>
+</section>
+<section id="live-monitoring-user-interface">
+<h4>Live monitoring user interface<a class="headerlink" href="#live-monitoring-user-interface" title="Permalink to this heading">¶</a></h4>
 <p>mybench implements a web-based user interface that displays time series for
 throughput and latency of the running benchmark in real-time. Every five
 seconds, the user interface requests the throughput and latency time series for
 the current benchmark via HTTP. These time series are gathered by the data
 logger periodically and stored within a ring buffer. Visualization of the time
-series is implemented with the VegaLite visualization framework <a class="reference internal" href="#vega01" id="id8">[VEGA01]</a>. This
+series is implemented with the VegaLite visualization framework <a class="reference internal" href="#vega01" id="id8"><span>[VEGA01]</span></a>. This
 user interface allows users to identify issues with their custom benchmarks
 more quickly and therefore shortens the overall time required to develop and
 conduct benchmarks. Figure 4 shows a screenshot of this user interface.</p>
-<div class="figure" id="id12">
+<figure class="align-default" id="id12">
 <img alt="_images/screenshot.png" src="_images/screenshot.png" />
-<p class="caption"><span class="caption-text">Figure 4: A snapshot of the live monitoring user interface</span></p>
+<figcaption>
+<p><span class="caption-text">Figure 4: A snapshot of the live monitoring user interface</span><a class="headerlink" href="#id12" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<div role="list" class="citation-list">
+<div class="citation" id="vega01" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id8">VEGA01</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://vega.github.io/vega-lite/">https://vega.github.io/vega-lite/</a></p>
 </div>
-<table class="docutils citation" frame="void" id="vega01" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id8">[VEGA01]</a></td><td><a class="reference external" href="https://vega.github.io/vega-lite/">https://vega.github.io/vega-lite/</a></td></tr>
-</tbody>
-</table>
 </div>
-<div class="section" id="post-processing-tools">
-<h4>Post-processing tools<a class="headerlink" href="#post-processing-tools" title="Permalink to this headline">¶</a></h4>
+</section>
+<section id="post-processing-tools">
+<h4>Post-processing tools<a class="headerlink" href="#post-processing-tools" title="Permalink to this heading">¶</a></h4>
 <p>mybench includes a suite of post-processing utilities that can generate
 plots to visualize a benchmark run’s throughput and latency statistics.
 Multiple benchmark runs can also be visualized on the same figure to better
 compare them. Figure 5 shows an instance of this comparison with a sequence of
 benchmark runs where the desired throughput is increased from run to run.</p>
-<div class="figure" id="id13">
+<figure class="align-default" id="id13">
 <img alt="_images/postprocessing.png" src="_images/postprocessing.png" />
-<p class="caption"><span class="caption-text">Figure 5: A figure generated by the post-processing tools that show the
+<figcaption>
+<p><span class="caption-text">Figure 5: A figure generated by the post-processing tools that show the
 throughput and latency of a sequence of benchmarks with increasing desired
-throughput (<em>d</em>).</span></p>
-</div>
-</div>
-</div>
-<div class="section" id="experimental-evaluations-and-discussions">
-<h3>Experimental evaluations and discussions<a class="headerlink" href="#experimental-evaluations-and-discussions" title="Permalink to this headline">¶</a></h3>
-<div class="section" id="rate-control-stability">
-<h4>Rate control stability<a class="headerlink" href="#rate-control-stability" title="Permalink to this headline">¶</a></h4>
-</div>
-<div class="section" id="mybench-resource-utilization">
-<h4>mybench resource utilization<a class="headerlink" href="#mybench-resource-utilization" title="Permalink to this headline">¶</a></h4>
-</div>
-<div class="section" id="ease-of-implementation-of-new-benchmarks">
-<h4>Ease of implementation of new benchmarks<a class="headerlink" href="#ease-of-implementation-of-new-benchmarks" title="Permalink to this headline">¶</a></h4>
-</div>
-</div>
-<div class="section" id="limitations-and-future-work">
-<h3>Limitations and future work<a class="headerlink" href="#limitations-and-future-work" title="Permalink to this headline">¶</a></h3>
-</div>
-<div class="section" id="conclusion">
-<h3>Conclusion<a class="headerlink" href="#conclusion" title="Permalink to this headline">¶</a></h3>
-</div>
-</div>
-</div>
+throughput (<em>d</em>).</span><a class="headerlink" href="#id13" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+</section>
+<section id="experimental-evaluations-and-discussions">
+<h3>Experimental evaluations and discussions<a class="headerlink" href="#experimental-evaluations-and-discussions" title="Permalink to this heading">¶</a></h3>
+<section id="rate-control-stability">
+<h4>Rate control stability<a class="headerlink" href="#rate-control-stability" title="Permalink to this heading">¶</a></h4>
+</section>
+<section id="mybench-resource-utilization">
+<h4>mybench resource utilization<a class="headerlink" href="#mybench-resource-utilization" title="Permalink to this heading">¶</a></h4>
+</section>
+<section id="ease-of-implementation-of-new-benchmarks">
+<h4>Ease of implementation of new benchmarks<a class="headerlink" href="#ease-of-implementation-of-new-benchmarks" title="Permalink to this heading">¶</a></h4>
+</section>
+</section>
+<section id="limitations-and-future-work">
+<h3>Limitations and future work<a class="headerlink" href="#limitations-and-future-work" title="Permalink to this heading">¶</a></h3>
+</section>
+<section id="conclusion">
+<h3>Conclusion<a class="headerlink" href="#conclusion" title="Permalink to this heading">¶</a></h3>
+</section>
+</section>
+</section>
 
 
           </div>
+          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
@@ -420,7 +432,7 @@ throughput (<em>d</em>).</span></p>
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="introduction.html">What is mybench?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting started</a></li>
@@ -440,17 +452,23 @@ throughput (<em>d</em>).</span></p>
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
         </div>
       </div>
       <div class="clearer"></div>
@@ -459,8 +477,8 @@ throughput (<em>d</em>).</span></p>
       &copy;2022 - Present, Shopify Inc..
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
       <a href="_sources/detailed-design-doc.rst.txt"
