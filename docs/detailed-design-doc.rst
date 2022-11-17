@@ -142,7 +142,7 @@ per-workload and overall throughput and latency statistics. These values are
 then written into a SQLite database.
 
 Users developing a custom benchmark do not need to be concerned with the
-internal details of mybench. To define a ``Workload``, the user simply needs to
+internal details of mybench. To define a ``Workload``, the user needs to
 define a struct implementing the ``WorkloadInterface`` interface, which
 requires the definition of the ``Event`` callback, a ``Config`` method
 returning the configurations of the workload (such as the event rate and number
@@ -168,7 +168,7 @@ Rate control via "temporal-discretization" looper
 
 A common approach to discover the limits of the database is by performing a
 sequence of benchmarks with increasing event rates. When the database is
-overloaded, the event rate will plateau and the latency will stagnate. To
+overloaded, the event rate will plateau or decline and the latency will increase. To
 perform this type of benchmarks, an accurate and precise rate controller is
 required. One naive approach to implement such a controller would be executing
 the event code followed by a sleep in a simple loop. The sleep duration can be
@@ -279,10 +279,10 @@ storage, and post-processing of the data.
    calculated throughput, as both numerator and the denominator will be affected
    by the passage of time.
 
-Random data generation
+Data generation
 ----------------------
 
-Database benchmarks require the generation of random data. Similar to other
+Database benchmarks require the generation of data. Similar to other
 benchmark systems, mybench also provides a number of builtin data generators
 that can generate data with different types and distributions. All data
 generators implement an interface two methods: (1) one for the generation of
