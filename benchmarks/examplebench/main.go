@@ -1,14 +1,13 @@
 package main
 
 import (
-	"flag"
-
 	"github.com/Shopify/mybench"
+	"github.com/jessevdk/go-flags"
 )
 
 type ExampleBenchmarkConfig struct {
 	*mybench.BenchmarkAppConfig
-	InitialNumRows int64
+	InitialNumRows int64 `long:"numrows" description:"the number of rows to load into the database" default:"1000000"`
 }
 
 func NewSimpleTable(idGen *mybench.AutoIncrementGenerator) mybench.Table {
@@ -34,8 +33,10 @@ func main() {
 	config := ExampleBenchmarkConfig{
 		BenchmarkAppConfig: mybench.NewBenchmarkAppConfig(),
 	}
-	flag.Int64Var(&config.InitialNumRows, "numrows", 1000000, "the number of rows to load into the database")
-	flag.Parse()
+	_, err := flags.Parse(&config)
+	if err != nil {
+		panic(err)
+	}
 
 	app, err := mybench.NewBenchmarkApp("ExampleBench", config, setupBenchmark, runLoader)
 	if err != nil {

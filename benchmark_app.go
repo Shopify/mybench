@@ -2,7 +2,6 @@ package mybench
 
 import (
 	"errors"
-	"flag"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,16 +13,17 @@ import (
 type BenchmarkAppConfig struct {
 	DatabaseConfig DatabaseConfig
 
-	Bench bool
-	Load  bool
+	Bench    bool          `long:"bench"`
+	Load     bool          `long:"load"`
+	Duration time.Duration `long:"duration" description:"duration of the benchmark (0 means infinite)" default:"0"`
+	HttpPort int           `long:"httpport" description:"the port of the monitoring UI" default:"8005"`
 
-	LoadConcurrency int
-	HttpPort        int
-	Duration        time.Duration
-	Multiplier      float64
-	LogFile         string
-	LogTable        string
-	Note            string
+	LoadConcurrency int     `long:"load-concurrency" description:"the concurrency to use during the load" default:"16"`
+	Multiplier      float64 `long:"multiplier" description:"multiplies the event rate of the benchmark (not necessarily used by the benchmark, depends on implementation)" default:"1.0"`
+
+	LogFile  string `long:"log" description:"path to the log file" default:"data.sqlite"`
+	LogTable string `long:"logtable" description:"the tablename in the sqlite file to record to (default is based on the start time in RFC3399)" default:""`
+	Note     string `long:"note" description:"a note to include in the meta table entry for this run in the sqlite file" default:""`
 }
 
 type ConfigType interface {
@@ -34,26 +34,7 @@ type ConfigType interface {
 }
 
 func NewBenchmarkAppConfig() *BenchmarkAppConfig {
-	config := &BenchmarkAppConfig{}
-
-	flag.StringVar(&config.DatabaseConfig.Host, "host", "", "database host name")
-	flag.IntVar(&config.DatabaseConfig.Port, "port", 3306, "database port (default: 3306)")
-	flag.StringVar(&config.DatabaseConfig.User, "user", "root", "database user (default: root)")
-	flag.StringVar(&config.DatabaseConfig.Pass, "pass", "", "database password (default: empty)")
-	flag.StringVar(&config.DatabaseConfig.Database, "db", "mybench", "database name (default: mybench)")
-
-	flag.BoolVar(&config.Load, "load", false, "load the data before the benchmark")
-	flag.BoolVar(&config.Bench, "bench", false, "run the benchmark")
-	flag.IntVar(&config.HttpPort, "httpport", 8005, "port of the monitoring UI")
-	flag.DurationVar(&config.Duration, "duration", 0, "duration of the benchmark")
-	flag.Float64Var(&config.Multiplier, "multiplier", 1.0, "multiplier of the benchmark")
-	flag.StringVar(&config.LogFile, "log", "data.sqlite", "the path to the log file")
-	flag.StringVar(&config.LogTable, "logtable", "", "the table name in the sqlite file to record to (default: based on the start time in RFC3399)")
-	flag.StringVar(&config.Note, "note", "", "a note to include in the meta table entry for this run")
-
-	flag.IntVar(&config.LoadConcurrency, "load-concurrency", 16, "the concurrency to use during the load")
-
-	return config
+	return &BenchmarkAppConfig{}
 }
 
 func (c BenchmarkAppConfig) GetCommonBenchmarkConfig() BenchmarkAppConfig {
@@ -62,7 +43,7 @@ func (c BenchmarkAppConfig) GetCommonBenchmarkConfig() BenchmarkAppConfig {
 
 func (c BenchmarkAppConfig) Validate() error {
 	if c.Bench == c.Load {
-		return errors.New("must only specify one of -bench or -load")
+		return errors.New("must only specify one of --bench or --load")
 	}
 
 	if c.DatabaseConfig.Host == "" {

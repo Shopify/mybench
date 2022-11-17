@@ -10,11 +10,11 @@ import (
 // (without connection pooling).
 type DatabaseConfig struct {
 	// TODO: Unix socket
-	Host     string
-	Port     int
-	User     string
-	Pass     string
-	Database string
+	Host     string `short:"H" long:"host" description:"host of the database instance" group:"database"`
+	Port     int    `short:"P" long:"port" description:"port of the database instance" default:"3306" group:"database"`
+	User     string `short:"u" long:"user" description:"username for the database" default:"root" group:"database"`
+	Pass     string `short:"p" long:"pass" description:"password for the database" default:"" group:"database"`
+	Database string `short:"d" long:"db" description:"name of the database schema (if applicable)" default:"mybench" group:"database"`
 
 	// If this is set, a connection will not be established. This is useful for
 	// non-database-related tests such as selfbench.
@@ -53,4 +53,12 @@ func (c DatabaseConfig) Connection() (*Connection, error) {
 
 type Connection struct {
 	*client.Conn
+}
+
+func (c *Connection) Close() error {
+	if c.Conn == nil {
+		return nil // This happens if NoConnection is true
+	}
+
+	return c.Conn.Close()
 }

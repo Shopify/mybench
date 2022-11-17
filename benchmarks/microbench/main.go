@@ -1,10 +1,9 @@
 package main
 
 import (
-	"flag"
-
 	"github.com/Shopify/mybench"
 	"github.com/go-mysql-org/go-mysql/client"
+	"github.com/jessevdk/go-flags"
 	"github.com/sirupsen/logrus"
 )
 
@@ -53,15 +52,15 @@ func NewMicroBenchTable(idGen *mybench.AutoIncrementGenerator, indexCardinality 
 
 type MicroBenchConfig struct {
 	*mybench.BenchmarkAppConfig
-	InitialNumRows   int64
-	IndexCardinality int
+	InitialNumRows   int64 `long:"numrows" description:"number of rows to load into the database" default:"1000000"`
+	IndexCardinality int   `long:"index-cardinality" description:"number of different values to generate for the indexed columns (this needs to be specified for both --bench and --load)" default:"100000"`
 
-	BulkSelectIndexedRate                float64
-	BulkSelectIndexedOrderIndexedRate    float64
-	BulkSelectIndexedOrderNonIndexedRate float64
-	BulkSelectIndexedFilterRate          float64
-	PointSelectRate                      float64
-	BatchPointSelectRate                 float64
+	BulkSelectIndexedRate                float64 `long:"bulk-select-indexed" default:"0.0"`
+	BulkSelectIndexedOrderIndexedRate    float64 `long:"bulk-select-indexed-order-indexed" default:"0.0"`
+	BulkSelectIndexedOrderNonIndexedRate float64 `long:"bulk-select-indexed-order-non-indexed" default:"0.0"`
+	BulkSelectIndexedFilterRate          float64 `long:"bulk-select-indexed-filter" default:"0.0"`
+	PointSelectRate                      float64 `long:"point-select" default:"0.0"`
+	BatchPointSelectRate                 float64 `long:"batch-point-select" default:"0.0"`
 }
 
 type MicroBenchContextData struct {
@@ -72,18 +71,10 @@ func main() {
 	config := MicroBenchConfig{
 		BenchmarkAppConfig: mybench.NewBenchmarkAppConfig(),
 	}
-
-	flag.Int64Var(&config.InitialNumRows, "numrows", 1000000, "the number of rows to load into the database")
-	flag.IntVar(&config.IndexCardinality, "index-cardinality", 100000, "the number of different values to generate for the indexed columns (needed to be the same for both load and bench)")
-
-	flag.Float64Var(&config.BulkSelectIndexedRate, "bulk-select-indexed", 0.0, "the event rate for bulk insert indexed workload")
-	flag.Float64Var(&config.BulkSelectIndexedOrderIndexedRate, "bulk-select-indexed-order-indexed", 0.0, "the event rate for bulk insert indexed workload with an order by another indexed column")
-	flag.Float64Var(&config.BulkSelectIndexedOrderNonIndexedRate, "bulk-select-indexed-order-non-indexed", 0.0, "the event rate for bulk insert indexed workload with an order by another non-indexed column")
-	flag.Float64Var(&config.BulkSelectIndexedFilterRate, "bulk-select-indexed-filter", 0.0, "the event rate for bulk insert indexed workload but also filter the data after by a non-indexed column")
-	flag.Float64Var(&config.PointSelectRate, "point-select", 0.0, "the event rate for the point select workload")
-	flag.Float64Var(&config.BatchPointSelectRate, "batch-point-select", 0.0, "the event rate for the batch point select workload")
-
-	flag.Parse()
+	_, err := flags.Parse(&config)
+	if err != nil {
+		panic(err)
+	}
 
 	app, err := mybench.NewBenchmarkApp("MicroBench", config, setupBenchmark, runLoader)
 	if err != nil {

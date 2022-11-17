@@ -11,10 +11,11 @@ import (
 
 type SelfBenchConfig struct {
 	*mybench.BenchmarkAppConfig
-	EventRatePerWorker float64
-	Concurrency        int
-	OuterLoopRate      float64
-	SpinTime           time.Duration
+
+	EventRatePerWorker float64       `long:"event-rate-per-worker" description:"the number of workers to use" default:"100.0"`
+	Concurrency        int           `long:"concurrency" description:"the number of workers to use" default:"1"`
+	OuterLoopRate      float64       `long:"outer-loop-rate" description:"the outer loop rate of the looper" default:"50.0"`
+	SpinTime           time.Duration `long:"spin-time" description:"the amount of time to waste in each Event() call" default:"5ms"`
 }
 
 type SelfBench struct {
