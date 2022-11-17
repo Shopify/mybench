@@ -58,17 +58,17 @@ benchmark tool should thus provide a standard set of visualization and analysis
 tools to speed up the interpretation of the benchmark results.
 
 While a number of database benchmark tools such as sysbench [SYSBENCH01]_,
-benchbase [BENCHBASE01]_, and linkbench [LINKBENCH01]_, none of these tools
-fulfill all the requirements outlined above. The work presented here is our
-attempt to solve all of these problems in a single software package we named
-"mybench".
+benchbase [BENCHBASE01]_, and linkbench [LINKBENCH01]_ are available, none of
+these tools fulfill all the requirements outlined above. The work presented
+here is our attempt to solve all of these problems in a single software package
+we named "mybench".
 
 .. [#fpreprocessing] The authors borrow the terminology of "pre-processing",
    "processing", and "post-processing" from solid and fluid dynamic
    simulations. In those fields, pre-processing is the stage where engineers
    create the model that represents the physical system being simulated,
    processing is the stage when the calculations are made, and post-processing
-   is the stage where analysis are performed on the resulting data. In that
+   is the stage where analysis is performed on the resulting data. In that
    industry, software packages typically include software for pre-processing
    and post-processing to help engineers obtain results faster.
 
@@ -283,7 +283,7 @@ that can generate data with different types and distributions. All data
 generators implement an interface with two methods: (1) one for the generation of
 "new" data to be written to the database and (2) one for sampling data
 that already exists on the database such that the data can be used in the
-``WHERE`` clause of a ``SELECT`` statement. At this time, the data generator
+``WHERE`` clause of a ``SELECT`` statement. At this time, the data generators
 implemented within mybench are relatively primitive. For example, accurately
 sampling existing data can be memory and time intensive and mybench does not
 implement a fully-correct version of the existing data sampling algorithm at
@@ -294,11 +294,11 @@ compromised.
 The random data generators implemented in mybench use the standard ``rand``
 library from Go's standard libraries. The default random number generator
 implemented in the ``rand`` library uses a global random source protected by a
-global mutex. Since random data generation is performed concurrently from
-every worker, the global mutex protecting a global random source creates a
-significant performance bottleneck. This is resolved in mybench as data
-generators uses an non-protected, gouroutine-local random source stored on each
-``BenchmarkWorker``.
+global mutex. Since random data generation are performed concurrently from
+every worker, the global mutex protecting a default global random source would
+create a significant performance bottleneck. Thus, instead of using the default
+random source provided in Go's standard library, each BenchmarkWorker has its
+own instance of the random source and eliminates the need for a mutex.
 
 Live monitoring user interface
 ------------------------------
