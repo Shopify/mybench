@@ -21,38 +21,43 @@ type Benchmark struct {
 	workloadCancel context.CancelFunc
 	workloadWg     *sync.WaitGroup
 
+	// Auxiliary services are below
 	dataLogger       *DataLogger
 	dataLoggerCtx    context.Context
 	dataLoggerCancel context.CancelFunc
 	dataLoggerWg     *sync.WaitGroup
+
+	httpServer *HttpServer
 }
 
-func NewBenchmark(benchmarkName string, outputFilename string, outputTablename string, note string) (*Benchmark, error) {
-	m := &Benchmark{
+func NewBenchmark(benchmarkName string, outputFilename string, outputTableName string, note string, httpPort int) (*Benchmark, error) {
+	b := &Benchmark{
 		Name:         benchmarkName,
 		LogInterval:  1 * time.Second,
 		workloads:    make(map[string]AbstractWorkload),
-		logger:       logrus.WithField("tag", "mcbenchmark"),
+		logger:       logrus.WithField("tag", "benchmark"),
 		workloadWg:   &sync.WaitGroup{},
 		dataLoggerWg: &sync.WaitGroup{},
 	}
 
-	m.LogRingSize = int((10*time.Minute)/m.LogInterval) + 1
+	b.LogRingSize = int((10*time.Minute)/b.LogInterval) + 1
 
-	m.workloadCtx, m.workloadCancel = context.WithCancel(context.Background())
-	m.dataLoggerCtx, m.dataLoggerCancel = context.WithCancel(context.Background())
+	b.workloadCtx, b.workloadCancel = context.WithCancel(context.Background())
+	b.dataLoggerCtx, b.dataLoggerCancel = context.WithCancel(context.Background())
 
 	var err error
-	m.dataLogger, err = NewDataLogger(&DataLogger{
-		Interval:       m.LogInterval,
-		RingSize:       m.LogRingSize,
+	b.dataLogger, err = NewDataLogger(&DataLogger{
+		Interval:       b.LogInterval,
+		RingSize:       b.LogRingSize,
 		OutputFilename: outputFilename,
-		TableName:      outputTablename,
+		TableName:      outputTableName,
 		Note:           note,
-		Benchmark:      m,
+		Benchmark:      b,
 	})
 
-	return m, err
+	b.httpServer = NewHttpServer(b, httpPort)
+
+	return b, err
 }
 
 func (b *Benchmark) AddWorkload(workload AbstractWorkload) {
@@ -84,6 +89,10 @@ func (b *Benchmark) Start() {
 	go func() {
 		defer b.dataLoggerWg.Done()
 		b.dataLogger.Run(b.dataLoggerCtx, b.startTime)
+	}()
+
+	go func() {
+		b.httpServer.Run()
 	}()
 }
 

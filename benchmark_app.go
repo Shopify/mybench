@@ -102,8 +102,7 @@ type BenchmarkApp[ConfigT ConfigType] struct {
 
 	runLoader func(*BenchmarkApp[ConfigT]) error
 
-	benchmark  *Benchmark
-	httpServer *HttpServer
+	benchmark *Benchmark
 }
 
 func NewBenchmarkApp[ConfigT ConfigType](benchmarkName string, config ConfigT, setupBenchmark func(*BenchmarkApp[ConfigT]) error, runLoader func(*BenchmarkApp[ConfigT]) error) (*BenchmarkApp[ConfigT], error) {
@@ -126,6 +125,7 @@ func NewBenchmarkApp[ConfigT ConfigType](benchmarkName string, config ConfigT, s
 		config.GetCommonBenchmarkConfig().LogFile,
 		config.GetCommonBenchmarkConfig().LogTable,
 		config.GetCommonBenchmarkConfig().Note,
+		config.GetCommonBenchmarkConfig().HttpPort,
 	)
 	if err != nil {
 		return nil, err
@@ -136,7 +136,6 @@ func NewBenchmarkApp[ConfigT ConfigType](benchmarkName string, config ConfigT, s
 		setupBenchmark: setupBenchmark,
 		runLoader:      runLoader,
 		benchmark:      benchmark,
-		httpServer:     NewHttpServer(benchmark, config.GetCommonBenchmarkConfig().HttpPort),
 	}, nil
 }
 
@@ -164,10 +163,6 @@ func (a *BenchmarkApp[ConfigT]) RunBenchmark(duration time.Duration) error {
 	}
 
 	a.benchmark.Start()
-
-	go func() {
-		a.httpServer.Run()
-	}()
 
 	quitCh := make(chan struct{})
 
