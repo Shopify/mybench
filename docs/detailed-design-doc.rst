@@ -153,7 +153,8 @@ store thread-local state. Each custom benchmark is tied together with a
 defined by the user can be added to the ``Benchmark`` through the
 ``BenchmarkApp`` object.
 
-Finally, the ``BenchmarkApp`` also handles other administrative duties common
+
+The ``BenchmarkApp`` also handles other administrative duties common
 between all custom-defined user benchmarks, such as parsing the command line
 flags and setting an HTTP server where live throughput and latency statistics
 can be monitored.
