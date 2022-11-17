@@ -55,7 +55,7 @@ they must be analyzed in the post-processing stage. Throughput and latency
 values collected through the benchmark should be visualized in a standardized
 manner such that results from different benchmarks can be more easily compared. The
 benchmark tool should thus provide a standard set of visualization and analysis
-tool to speed up the interpretation of the benchmark results.
+tools to speed up the interpretation of the benchmark results.
 
 While a number of database benchmark tools such as sysbench [SYSBENCH01]_,
 benchbase [BENCHBASE01]_, and linkbench [LINKBENCH01]_, none of these tools
@@ -115,7 +115,7 @@ mybench.
    Figure 1: mybench architecture showing 3 ``Workload``\s each running with two
    ``BenchmarkWorker``\s
 
-mybench defines a **Benchmark** to consists of multiple **Workloads**. At least
+mybench defines a **Benchmark** to consist of multiple **Workloads**. At least
 one Workload must be defined for a Benchmark. Each Workload is defined by its
 ``Event`` callback, within which contains the code being benchmarked. For
 example, the ``Event`` callback for one workload could implement a sequence of
@@ -167,7 +167,7 @@ overloaded, the event rate will plateau or decline and the latency will increase
 perform this type of benchmarks, an accurate and precise rate controller is
 required. One naive approach to implement such a controller would be executing
 the event code followed by a sleep in a simple loop. The sleep duration can be
-calculated to match the requested event rate. However, maintaining a loop like
+calculated to match the requested event rate. However, maintaining a loop
 with a loop rate beyond 500 - 1000 Hz is difficult due to scheduling latencies
 incurred by the Linux process scheduler without the real-time patch applied.
 Additionally, Go's goroutine scheduler can introduce additional latencies on the
@@ -278,9 +278,9 @@ Data generation
 ----------------------
 
 Database benchmarks require the generation of data. Similar to other
-benchmark systems, mybench also provides a number of builtin data generators
+benchmark systems, mybench also provides a number of built-in data generators
 that can generate data with different types and distributions. All data
-generators implement an interface two methods: (1) one for the generation of
+generators implement an interface with two methods: (1) one for the generation of
 "new" data to be written to the database and (2) one for sampling data
 that already exists on the database such that the data can be used in the
 ``WHERE`` clause of a ``SELECT`` statement. At this time, the data generator
@@ -291,10 +291,10 @@ this time. Instead, data sampling is done in a best-effort manner to ensure
 the high performance and small resource footprint of mybench is not
 compromised.
 
-The random data generators implement in mybench uses the standard ``rand``
+The random data generators implemented in mybench use the standard ``rand``
 library from Go's standard libraries. The default random number generator
 implemented in the ``rand`` library uses a global random source protected by a
-global mutex. Since random data generation are performed concurrently from
+global mutex. Since random data generation is performed concurrently from
 every worker, the global mutex protecting a global random source creates a
 significant performance bottleneck. This is resolved in mybench as data
 generators uses an non-protected, gouroutine-local random source stored on each
