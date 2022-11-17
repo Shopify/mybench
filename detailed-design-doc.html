@@ -178,7 +178,7 @@ statistics across all <code class="docutils literal notranslate"><span class="pr
 per-workload and overall throughput and latency statistics. These values are
 then written into a SQLite database.</p>
 <p>Users developing a custom benchmark do not need to be concerned with the
-internal details of mybench. To define a <code class="docutils literal notranslate"><span class="pre">Workload</span></code>, the user simply needs to
+internal details of mybench. To define a <code class="docutils literal notranslate"><span class="pre">Workload</span></code>, the user needs to
 define a struct implementing the <code class="docutils literal notranslate"><span class="pre">WorkloadInterface</span></code> interface, which
 requires the definition of the <code class="docutils literal notranslate"><span class="pre">Event</span></code> callback, a <code class="docutils literal notranslate"><span class="pre">Config</span></code> method
 returning the configurations of the workload (such as the event rate and number
@@ -200,7 +200,7 @@ However, these are not uses cases that have been thoroughly tested for now.</p>
 <h4>Rate control via “temporal-discretization” looper<a class="headerlink" href="#rate-control-via-temporal-discretization-looper" title="Permalink to this heading">¶</a></h4>
 <p>A common approach to discover the limits of the database is by performing a
 sequence of benchmarks with increasing event rates. When the database is
-overloaded, the event rate will plateau and the latency will stagnate. To
+overloaded, the event rate will plateau or decline and the latency will increase. To
 perform this type of benchmarks, an accurate and precise rate controller is
 required. One naive approach to implement such a controller would be executing
 the event code followed by a sleep in a simple loop. The sleep duration can be
@@ -320,9 +320,9 @@ by the passage of time.</p>
 </aside>
 </aside>
 </section>
-<section id="random-data-generation">
-<h4>Random data generation<a class="headerlink" href="#random-data-generation" title="Permalink to this heading">¶</a></h4>
-<p>Database benchmarks require the generation of random data. Similar to other
+<section id="data-generation">
+<h4>Data generation<a class="headerlink" href="#data-generation" title="Permalink to this heading">¶</a></h4>
+<p>Database benchmarks require the generation of data. Similar to other
 benchmark systems, mybench also provides a number of builtin data generators
 that can generate data with different types and distributions. All data
 generators implement an interface two methods: (1) one for the generation of

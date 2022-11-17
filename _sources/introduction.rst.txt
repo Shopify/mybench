@@ -30,7 +30,7 @@ The main features of mybench includes:
 * **Post-processing scripts**: mybench includes a set of scripts that creates
   standard visualizations with the data logged in the SQLite database file.
   Multiple benchmark runs can be compared with these scripts.
-* **Random data generator with existing data sampling**: mybench includes a
+* **Data generators with data sampling**: mybench includes a
   number of builtin random number generators that also have the capability to
   sample from existing data so that the ``WHERE`` clause of ``SELECT``
   statements can be more easily constructed. However, this sampling is not
