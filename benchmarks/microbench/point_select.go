@@ -15,7 +15,7 @@ type PointSelect struct {
 	batchSize int
 }
 
-func NewPointSelect(config MicroBenchConfig, table *mybench.Table, eventRate float64, batchSize int) mybench.AbstractWorkload {
+func NewPointSelect(config *mybench.BenchmarkConfig, table *mybench.Table, eventRate float64, batchSize int) mybench.AbstractWorkload {
 	eventRate = eventRate * config.Multiplier
 	var workloadInterface mybench.WorkloadInterface[MicroBenchContextData] = &PointSelect{
 		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{

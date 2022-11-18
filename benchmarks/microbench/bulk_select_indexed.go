@@ -11,7 +11,7 @@ type BulkSelectIndexed struct {
 	table *mybench.Table
 }
 
-func NewBulkSelectIndexed(config MicroBenchConfig, table *mybench.Table, eventRate float64) mybench.AbstractWorkload {
+func NewBulkSelectIndexed(config *mybench.BenchmarkConfig, table *mybench.Table, eventRate float64) mybench.AbstractWorkload {
 	eventRate = eventRate * config.Multiplier
 	var workloadInterface mybench.WorkloadInterface[MicroBenchContextData] = &BulkSelectIndexed{
 		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{

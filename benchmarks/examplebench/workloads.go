@@ -9,13 +9,13 @@ type InsertSimpleTable struct {
 	table mybench.Table
 }
 
-func NewInsertSimpleTable(config ExampleBenchmarkConfig, table mybench.Table) mybench.AbstractWorkload {
+func NewInsertSimpleTable(exampleBench ExampleBench, table mybench.Table) mybench.AbstractWorkload {
 	var workloadInterface mybench.WorkloadInterface[mybench.NoContextData] = &InsertSimpleTable{
 		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
 			Name:           "InsertSimpleTable",
-			DatabaseConfig: config.DatabaseConfig,
+			DatabaseConfig: exampleBench.BenchmarkConfig.DatabaseConfig,
 			RateControl: mybench.RateControlConfig{
-				EventRate: 50 * config.Multiplier,
+				EventRate: 50 * exampleBench.BenchmarkConfig.Multiplier,
 			},
 		}),
 
@@ -53,13 +53,13 @@ type UpdateSimpleTable struct {
 	table mybench.Table
 }
 
-func NewUpdateSimpleTable(config ExampleBenchmarkConfig, table mybench.Table) mybench.AbstractWorkload {
+func NewUpdateSimpleTable(exampleBench ExampleBench, table mybench.Table) mybench.AbstractWorkload {
 	var workloadInterface mybench.WorkloadInterface[mybench.NoContextData] = &UpdateSimpleTable{
 		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
 			Name:           "UpdateSimpleTable",
-			DatabaseConfig: config.DatabaseConfig,
+			DatabaseConfig: exampleBench.BenchmarkConfig.DatabaseConfig,
 			RateControl: mybench.RateControlConfig{
-				EventRate: 50 * config.Multiplier,
+				EventRate: 50 * exampleBench.BenchmarkConfig.Multiplier,
 			},
 		}),
 

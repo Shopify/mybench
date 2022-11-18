@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type BenchmarkAppConfig struct {
+type BenchmarkConfig struct {
 	DatabaseConfig DatabaseConfig
 
 	Bench bool
@@ -29,12 +29,12 @@ type BenchmarkAppConfig struct {
 type ConfigType interface {
 	// Have to do the following because of this bug: https://github.com/golang/go/issues/48522
 	// Perhaps this code shouldn't even use generic and it can just use regular interface..., but what's the fun in that?! /s
-	GetCommonBenchmarkConfig() BenchmarkAppConfig
+	GetCommonBenchmarkConfig() BenchmarkConfig
 	Validate() error
 }
 
-func NewBenchmarkAppConfig() *BenchmarkAppConfig {
-	config := &BenchmarkAppConfig{}
+func NewBenchmarkConfig() *BenchmarkConfig {
+	config := &BenchmarkConfig{}
 
 	flag.StringVar(&config.DatabaseConfig.Host, "host", "", "database host name")
 	flag.IntVar(&config.DatabaseConfig.Port, "port", 3306, "database port (default: 3306)")
@@ -56,11 +56,11 @@ func NewBenchmarkAppConfig() *BenchmarkAppConfig {
 	return config
 }
 
-func (c BenchmarkAppConfig) GetCommonBenchmarkConfig() BenchmarkAppConfig {
+func (c BenchmarkConfig) Config() BenchmarkConfig {
 	return c
 }
 
-func (c BenchmarkAppConfig) Validate() error {
+func (c BenchmarkConfig) Validate() error {
 	if c.Bench == c.Load {
 		return errors.New("must only specify one of -bench or -load")
 	}
@@ -76,94 +76,76 @@ func (c BenchmarkAppConfig) Validate() error {
 	return nil
 }
 
-// Defines a benchmark application with common command-line flags.
-//
-// This application is a generic that takes two different types:
-//
-//  1. ConfigT: this is a type for a custom configuration object, where custom
-//     configuration data can be defined for the entire benchmark application.
-//     An example of data stored in this type could be a configuration variable
-//     that controls the event rate of a particular workload (if the benchmark
-//     application defines multiple workloads).
-//  2. ContextDataT: this is a type for a custom goroutine-specific data object,
-//     where custom data can be stored. This data is created once per goroutine
-//     (via the WorkloadInterface.NewContextData method) and can be
-//     accessed in the WorkerContext object passed to the
-//     WorkloadInterface.Event method. An example of data stored in this
-//     type could be a prepared statement. Prepared statements must not be
-//     reused across multiple threads, so each goroutine must create its own
-//     prepared statements.
-type BenchmarkApp[ConfigT ConfigType] struct {
-	Config ConfigT
+// This is the interface that the benchmark application needs to implement
+type BenchmarkInterface interface {
+	// Returns the name of the benchmark
+	Name() string
 
-	// Custom benchmark setup code
-	// This is where you create the workloads.
-	setupBenchmark func(*BenchmarkApp[ConfigT]) error
+	// Returns a list of constructed workloads (or an error) for this benchmark.
+	Workloads() ([]AbstractWorkload, error)
 
-	runLoader func(*BenchmarkApp[ConfigT]) error
+	// This function is called if the benchmark ran with the --load flag. This
+	// should load the database when called.
+	RunLoader() error
 
-	benchmark *Benchmark
+	// Returns the benchmark app configuration. The configuration returned must
+	// have already been validated with defaults filled in. Make sure to call
+	// .Validate() on it during the construction of the object that implements
+	// this interface.
+	//
+	// If you implement this interface and embeds CommonBenchmarkConfig in it, you
+	// won't need to define this method as the CommonBenchmarkConfig object already
+	// defines this method.
+	Config() BenchmarkConfig
 }
 
-func NewBenchmarkApp[ConfigT ConfigType](benchmarkName string, config ConfigT, setupBenchmark func(*BenchmarkApp[ConfigT]) error, runLoader func(*BenchmarkApp[ConfigT]) error) (*BenchmarkApp[ConfigT], error) {
+// Runs a custom defined benchmark that implements the BenchmarkInterface.
+func Run(benchmarkInterface BenchmarkInterface) error {
+	config := benchmarkInterface.Config()
 	err := config.Validate()
-	if err != nil {
-		return nil, err
-	}
-
-	if !config.GetCommonBenchmarkConfig().DatabaseConfig.NoConnection {
-		err = config.GetCommonBenchmarkConfig().DatabaseConfig.CreateDatabaseIfNeeded()
-		if err != nil {
-			logrus.WithError(err).Panic("cannot create new database")
-			return nil, err
-		}
-	}
-
-	// The code constructing the Benchmark is not ideal (messy) but works.
-	benchmark, err := NewBenchmark(
-		benchmarkName,
-		config.GetCommonBenchmarkConfig().LogFile,
-		config.GetCommonBenchmarkConfig().LogTable,
-		config.GetCommonBenchmarkConfig().Note,
-		config.GetCommonBenchmarkConfig().HttpPort,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &BenchmarkApp[ConfigT]{
-		Config:         config,
-		setupBenchmark: setupBenchmark,
-		runLoader:      runLoader,
-		benchmark:      benchmark,
-	}, nil
-}
-
-func (a *BenchmarkApp[ConfigT]) AddWorkload(workload AbstractWorkload) {
-	a.benchmark.AddWorkload(workload)
-}
-
-func (a *BenchmarkApp[ConfigT]) Run() error {
-	commonConfig := a.Config.GetCommonBenchmarkConfig()
-	if commonConfig.Load {
-		return a.RunLoader()
-	}
-
-	return a.RunBenchmark(commonConfig.Duration)
-}
-
-func (a *BenchmarkApp[ConfigT]) RunLoader() error {
-	return a.runLoader(a)
-}
-
-func (a *BenchmarkApp[ConfigT]) RunBenchmark(duration time.Duration) error {
-	err := a.setupBenchmark(a)
 	if err != nil {
 		return err
 	}
 
-	a.benchmark.Start()
+	// Creates the database if needed
+	if !config.DatabaseConfig.NoConnection {
+		err := config.DatabaseConfig.CreateDatabaseIfNeeded()
+		if err != nil {
+			logrus.WithError(err).Error("cannot create new database")
+			return err
+		}
+	}
 
+	// Run the loader if configured to do so
+	if config.Load {
+		return benchmarkInterface.RunLoader()
+	}
+
+	// Construct and run the benchmark
+	benchmark, err := NewBenchmark(
+		benchmarkInterface.Name(),
+		config.LogFile,
+		config.LogTable,
+		config.Note,
+		config.HttpPort,
+	)
+	if err != nil {
+		return err
+	}
+
+	workloads, err := benchmarkInterface.Workloads()
+	if err != nil {
+		return err
+	}
+
+	for _, workload := range workloads {
+		benchmark.AddWorkload(workload)
+	}
+
+	benchmark.Start()
+
+	// Handle stopping of the benchmarks via either signals or timers (if duration
+	// is configured).
 	quitCh := make(chan struct{})
 
 	go func() {
@@ -172,16 +154,16 @@ func (a *BenchmarkApp[ConfigT]) RunBenchmark(duration time.Duration) error {
 
 		s := <-c
 		logrus.WithField("signal", s.String()).Warn("received termination signal")
-		a.benchmark.StopAndWait()
+		benchmark.StopAndWait()
 		logrus.Info("benchmark stopped")
 		close(quitCh)
 	}()
 
-	if duration > time.Duration(0) {
-		logrus.Infof("running benchmark for %v", duration)
+	if config.Duration > time.Duration(0) {
+		logrus.Infof("running benchmark for %v", config.Duration)
 		go func() {
-			time.Sleep(duration)
-			a.benchmark.StopAndWait()
+			time.Sleep(config.Duration)
+			benchmark.StopAndWait()
 			close(quitCh)
 		}()
 	} else {
@@ -189,5 +171,6 @@ func (a *BenchmarkApp[ConfigT]) RunBenchmark(duration time.Duration) error {
 	}
 
 	<-quitCh
+
 	return nil
 }
