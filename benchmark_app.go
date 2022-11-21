@@ -26,13 +26,6 @@ type BenchmarkConfig struct {
 	Note            string
 }
 
-type ConfigType interface {
-	// Have to do the following because of this bug: https://github.com/golang/go/issues/48522
-	// Perhaps this code shouldn't even use generic and it can just use regular interface..., but what's the fun in that?! /s
-	GetCommonBenchmarkConfig() BenchmarkConfig
-	Validate() error
-}
-
 func NewBenchmarkConfig() *BenchmarkConfig {
 	config := &BenchmarkConfig{}
 
@@ -93,9 +86,10 @@ type BenchmarkInterface interface {
 	// .Validate() on it during the construction of the object that implements
 	// this interface.
 	//
-	// If you implement this interface and embeds CommonBenchmarkConfig in it, you
-	// won't need to define this method as the CommonBenchmarkConfig object already
-	// defines this method.
+	// If you implement BenchmarkInterface with BenchmarkConfig embedded in it,
+	// you won't need to define this method as the BenchmarkConfig object already
+	// defines this method for you, and embedding it in your struct will cause
+	// your struct to inherit the method implemented on BenchmarkConfig.
 	Config() BenchmarkConfig
 }
 
