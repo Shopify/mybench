@@ -6,11 +6,6 @@ import (
 	"github.com/Shopify/mybench"
 )
 
-type ExampleBenchmarkConfig struct {
-	*mybench.BenchmarkAppConfig
-	InitialNumRows int64
-}
-
 func NewSimpleTable(idGen *mybench.AutoIncrementGenerator) mybench.Table {
 	return mybench.InitializeTable(mybench.Table{
 		Name: "example_table",
@@ -31,44 +26,49 @@ func NewSimpleTable(idGen *mybench.AutoIncrementGenerator) mybench.Table {
 }
 
 func main() {
-	config := ExampleBenchmarkConfig{
-		BenchmarkAppConfig: mybench.NewBenchmarkAppConfig(),
+	benchmarkInterface := ExampleBench{
+		BenchmarkConfig: mybench.NewBenchmarkConfig(),
 	}
-	flag.Int64Var(&config.InitialNumRows, "numrows", 1000000, "the number of rows to load into the database")
+	flag.Int64Var(&benchmarkInterface.InitialNumRows, "numrows", 1000000, "the number of rows to load into the database")
 	flag.Parse()
 
-	app, err := mybench.NewBenchmarkApp("ExampleBench", config, setupBenchmark, runLoader)
-	if err != nil {
-		panic(err)
-	}
-
-	err = app.Run()
+	err := mybench.Run(benchmarkInterface)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func setupBenchmark(app *mybench.BenchmarkApp[ExampleBenchmarkConfig]) error {
+type ExampleBench struct {
+	*mybench.BenchmarkConfig
+	InitialNumRows int64
+}
+
+func (b ExampleBench) Name() string {
+	return "ExampleBench"
+}
+
+func (b ExampleBench) Workloads() ([]mybench.AbstractWorkload, error) {
 	// TODO: once there is a loader, we need to fetch the maximum id before the benchmark here to seed the auto increment generator.
-	conn, err := app.Config.DatabaseConfig.Connection()
+	conn, err := b.BenchmarkConfig.DatabaseConfig.Connection()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer conn.Close()
 
-	idGen, err := mybench.NewAutoIncrementGeneratorFromDatabase(conn, app.Config.DatabaseConfig.Database, "example_table", "id")
+	idGen, err := mybench.NewAutoIncrementGeneratorFromDatabase(conn, b.BenchmarkConfig.DatabaseConfig.Database, "example_table", "id")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	gen := NewSimpleTable(idGen)
+	table := NewSimpleTable(idGen)
 
-	app.AddWorkload(NewInsertSimpleTable(app.Config, gen))
-	app.AddWorkload(NewUpdateSimpleTable(app.Config, gen))
-	return nil
+	return []mybench.AbstractWorkload{
+		NewInsertSimpleTable(b, table),
+		NewUpdateSimpleTable(b, table),
+	}, nil
 }
 
-func runLoader(app *mybench.BenchmarkApp[ExampleBenchmarkConfig]) error {
-	NewSimpleTable(mybench.NewAutoIncrementGenerator(0, 0)).ReloadData(app.Config.DatabaseConfig, 1000000, 200, 8)
+func (b ExampleBench) RunLoader() error {
+	NewSimpleTable(mybench.NewAutoIncrementGenerator(0, 0)).ReloadData(b.BenchmarkConfig.DatabaseConfig, b.InitialNumRows, 200, 8)
 	return nil
 }

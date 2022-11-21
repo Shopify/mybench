@@ -8,6 +8,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type MicroBenchContextData struct {
+	Statement *client.Stmt
+}
+
 func NewMicroBenchTable(idGen *mybench.AutoIncrementGenerator, indexCardinality int) mybench.Table {
 	return mybench.InitializeTable(mybench.Table{
 		Name: "microbench",
@@ -51,8 +55,32 @@ func NewMicroBenchTable(idGen *mybench.AutoIncrementGenerator, indexCardinality 
 	})
 }
 
-type MicroBenchConfig struct {
-	*mybench.BenchmarkAppConfig
+func main() {
+	benchmarkInterface := MicroBench{
+		BenchmarkConfig: mybench.NewBenchmarkConfig(),
+	}
+
+	flag.Int64Var(&benchmarkInterface.InitialNumRows, "numrows", 1000000, "the number of rows to load into the database")
+	flag.IntVar(&benchmarkInterface.IndexCardinality, "index-cardinality", 100000, "the number of different values to generate for the indexed columns (needed to be the same for both load and bench)")
+
+	flag.Float64Var(&benchmarkInterface.BulkSelectIndexedRate, "bulk-select-indexed", 0.0, "the event rate for bulk insert indexed workload")
+	flag.Float64Var(&benchmarkInterface.BulkSelectIndexedOrderIndexedRate, "bulk-select-indexed-order-indexed", 0.0, "the event rate for bulk insert indexed workload with an order by another indexed column")
+	flag.Float64Var(&benchmarkInterface.BulkSelectIndexedOrderNonIndexedRate, "bulk-select-indexed-order-non-indexed", 0.0, "the event rate for bulk insert indexed workload with an order by another non-indexed column")
+	flag.Float64Var(&benchmarkInterface.BulkSelectIndexedFilterRate, "bulk-select-indexed-filter", 0.0, "the event rate for bulk insert indexed workload but also filter the data after by a non-indexed column")
+	flag.Float64Var(&benchmarkInterface.PointSelectRate, "point-select", 0.0, "the event rate for the point select workload")
+	flag.Float64Var(&benchmarkInterface.BatchPointSelectRate, "batch-point-select", 0.0, "the event rate for the batch point select workload")
+
+	flag.Parse()
+
+	err := mybench.Run(benchmarkInterface)
+	if err != nil {
+		panic(err)
+	}
+}
+
+type MicroBench struct {
+	*mybench.BenchmarkConfig
+
 	InitialNumRows   int64
 	IndexCardinality int
 
@@ -64,87 +92,60 @@ type MicroBenchConfig struct {
 	BatchPointSelectRate                 float64
 }
 
-type MicroBenchContextData struct {
-	Statement *client.Stmt
+func (b MicroBench) Name() string {
+	return "MicroBench"
 }
 
-func main() {
-	config := MicroBenchConfig{
-		BenchmarkAppConfig: mybench.NewBenchmarkAppConfig(),
-	}
-
-	flag.Int64Var(&config.InitialNumRows, "numrows", 1000000, "the number of rows to load into the database")
-	flag.IntVar(&config.IndexCardinality, "index-cardinality", 100000, "the number of different values to generate for the indexed columns (needed to be the same for both load and bench)")
-
-	flag.Float64Var(&config.BulkSelectIndexedRate, "bulk-select-indexed", 0.0, "the event rate for bulk insert indexed workload")
-	flag.Float64Var(&config.BulkSelectIndexedOrderIndexedRate, "bulk-select-indexed-order-indexed", 0.0, "the event rate for bulk insert indexed workload with an order by another indexed column")
-	flag.Float64Var(&config.BulkSelectIndexedOrderNonIndexedRate, "bulk-select-indexed-order-non-indexed", 0.0, "the event rate for bulk insert indexed workload with an order by another non-indexed column")
-	flag.Float64Var(&config.BulkSelectIndexedFilterRate, "bulk-select-indexed-filter", 0.0, "the event rate for bulk insert indexed workload but also filter the data after by a non-indexed column")
-	flag.Float64Var(&config.PointSelectRate, "point-select", 0.0, "the event rate for the point select workload")
-	flag.Float64Var(&config.BatchPointSelectRate, "batch-point-select", 0.0, "the event rate for the batch point select workload")
-
-	flag.Parse()
-
-	app, err := mybench.NewBenchmarkApp("MicroBench", config, setupBenchmark, runLoader)
-	if err != nil {
-		panic(err)
-	}
-
-	err = app.Run()
-	if err != nil {
-		panic(err)
-	}
-}
-
-func setupBenchmark(app *mybench.BenchmarkApp[MicroBenchConfig]) error {
-	conn, err := app.Config.DatabaseConfig.Connection()
+func (b MicroBench) Workloads() ([]mybench.AbstractWorkload, error) {
+	conn, err := b.BenchmarkConfig.DatabaseConfig.Connection()
 	if err != nil {
 		logrus.WithError(err).Error("cannot connect to database")
-		return err
+		return nil, err
 	}
 	defer conn.Close()
 
-	idGen, err := mybench.NewAutoIncrementGeneratorFromDatabase(conn, app.Config.DatabaseConfig.Database, "microbench", "id")
+	idGen, err := mybench.NewAutoIncrementGeneratorFromDatabase(conn, b.BenchmarkConfig.DatabaseConfig.Database, "microbench", "id")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// TODO: actually should get this value from the database, as opposed to getting it from commandline.
-	table := NewMicroBenchTable(idGen, app.Config.IndexCardinality)
+	table := NewMicroBenchTable(idGen, b.IndexCardinality)
 
-	if app.Config.BulkSelectIndexedRate > 0 {
-		app.AddWorkload(NewBulkSelectIndexed(app.Config, &table, app.Config.BulkSelectIndexedRate))
+	workloads := []mybench.AbstractWorkload{}
+	if b.BulkSelectIndexedRate > 0 {
+		workloads = append(workloads, NewBulkSelectIndexed(b.BenchmarkConfig, &table, b.BulkSelectIndexedRate))
 	}
 
-	if app.Config.BulkSelectIndexedOrderIndexedRate > 0 {
-		app.AddWorkload(NewBulkSelectIndexedOrder(app.Config, &table, app.Config.BulkSelectIndexedOrderIndexedRate, "idx1"))
+	if b.BulkSelectIndexedOrderIndexedRate > 0 {
+		workloads = append(workloads, NewBulkSelectIndexedOrder(b.BenchmarkConfig, &table, b.BulkSelectIndexedOrderIndexedRate, "idx1"))
 	}
 
-	if app.Config.BulkSelectIndexedOrderNonIndexedRate > 0 {
-		app.AddWorkload(NewBulkSelectIndexedOrder(app.Config, &table, app.Config.BulkSelectIndexedOrderNonIndexedRate, "data1"))
+	if b.BulkSelectIndexedOrderNonIndexedRate > 0 {
+		workloads = append(workloads, NewBulkSelectIndexedOrder(b.BenchmarkConfig, &table, b.BulkSelectIndexedOrderNonIndexedRate, "data1"))
 	}
 
-	if app.Config.BulkSelectIndexedFilterRate > 0 {
-		app.AddWorkload(NewBulkSelectIndexedFilter(app.Config, &table, app.Config.BulkSelectIndexedFilterRate, "b"))
+	if b.BulkSelectIndexedFilterRate > 0 {
+		workloads = append(workloads, NewBulkSelectIndexedFilter(b.BenchmarkConfig, &table, b.BulkSelectIndexedFilterRate, "b"))
 	}
 
-	if app.Config.PointSelectRate > 0 {
-		app.AddWorkload(NewPointSelect(app.Config, &table, app.Config.PointSelectRate, 1))
+	if b.PointSelectRate > 0 {
+		workloads = append(workloads, NewPointSelect(b.BenchmarkConfig, &table, b.PointSelectRate, 1))
 	}
 
-	if app.Config.BatchPointSelectRate > 0 {
-		app.AddWorkload(NewPointSelect(app.Config, &table, app.Config.BatchPointSelectRate, 200))
+	if b.BatchPointSelectRate > 0 {
+		workloads = append(workloads, NewPointSelect(b.BenchmarkConfig, &table, b.BatchPointSelectRate, 200))
 	}
 
-	return nil
+	return workloads, nil
 }
 
-func runLoader(app *mybench.BenchmarkApp[MicroBenchConfig]) error {
-	NewMicroBenchTable(mybench.NewAutoIncrementGenerator(0, 0), app.Config.IndexCardinality).ReloadData(
-		app.Config.DatabaseConfig,
-		app.Config.InitialNumRows,
+func (b MicroBench) RunLoader() error {
+	NewMicroBenchTable(mybench.NewAutoIncrementGenerator(0, 0), b.IndexCardinality).ReloadData(
+		b.DatabaseConfig,
+		b.InitialNumRows,
 		500,
-		app.Config.LoadConcurrency,
+		b.BenchmarkConfig.LoadConcurrency,
 	)
 	return nil
 }

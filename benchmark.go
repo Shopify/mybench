@@ -35,7 +35,7 @@ func NewBenchmark(benchmarkName string, outputFilename string, outputTableName s
 		Name:         benchmarkName,
 		LogInterval:  1 * time.Second,
 		workloads:    make(map[string]AbstractWorkload),
-		logger:       logrus.WithField("tag", "benchmark"),
+		logger:       logrus.WithField("tag", "benchmark").WithField("benchmark", benchmarkName),
 		workloadWg:   &sync.WaitGroup{},
 		dataLoggerWg: &sync.WaitGroup{},
 	}

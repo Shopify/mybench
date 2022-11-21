@@ -12,7 +12,7 @@ type BulkSelectIndexedOrder struct {
 	orderField string
 }
 
-func NewBulkSelectIndexedOrder(config MicroBenchConfig, table *mybench.Table, eventRate float64, orderField string) mybench.AbstractWorkload {
+func NewBulkSelectIndexedOrder(config *mybench.BenchmarkConfig, table *mybench.Table, eventRate float64, orderField string) mybench.AbstractWorkload {
 	eventRate = eventRate * config.Multiplier
 	var workloadInterface mybench.WorkloadInterface[MicroBenchContextData] = &BulkSelectIndexedOrder{
 		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
