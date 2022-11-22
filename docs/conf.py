@@ -26,6 +26,8 @@ html_theme_options = {
   "github_repo": "mybench",
   "github_type": "star",
   "description": "A high-performance framework for rapid prototyping of benchmarks",
+  "page_width": "1200px",
+  "body_max_width": "auto",
 }
 
 # -- Options for HTML output -------------------------------------------------

@@ -5,9 +5,26 @@ import (
 	"time"
 )
 
+// This is the object type that holds the thread-local context data for each
+// benchmark worker. Each benchmark worker has its own copy of this. This
+// object is passed by the benchmark worker to the workload Event() function
+// through the Event() function argument.
+//
+// The WorkerContext also holds arbitrary data with user-defined types under
+// the Data attribute. This allows the user to store custom thread-local data
+// on each benchmark for their workloads. A common use case is to store a
+// statement object in an user-defined struct.
 type WorkerContext[T any] struct {
+	// A worker-specific connection object to the database.
 	Conn *Connection
+
+	// A worker-specific Rand object. This is needed because the global rand.*
+	// functions in Go uses a global mutex underneath the hood and can cause
+	// severe performance problems within mybench due to lock contention.
 	Rand *Rand
+
+	// User-defined custom data. If no custom data is needed, set T to be
+	// mybench.NoContextData.
 	Data T
 }
 

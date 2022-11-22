@@ -15,17 +15,38 @@ func QuestionMarksStringList(n int) string {
 }
 
 type Column struct {
-	Name       string
+	// Name of the column
+	Name string
+
+	// SQL definition of the column
 	Definition string
-	Generator  DataGenerator
+
+	// The data generator for the data of this column.
+	Generator DataGenerator
 }
 
+// This struct provides helpers for creating and seeding a table.
 type Table struct {
-	Name         string
-	Columns      []*Column
-	PrimaryKey   []string
-	Indices      [][]string
-	UniqueKeys   [][]string
+	// The name of the table
+	Name string
+
+	// The list of columns. The order of the columns in the table follows the
+	// order of this slice.
+	Columns []*Column
+
+	// The columns for the primary key for the table. This is a slice as it
+	// supports a composite primary key.
+	PrimaryKey []string
+
+	// A list of columns for indices.
+	Indices [][]string
+
+	// A list of columns for unique indices.
+	UniqueKeys [][]string
+
+	// Additional table options appended to the end of the CREATE TABLE
+	// statements, such as compression settings, auto increment settings, and so
+	// on.
 	TableOptions string
 
 	columnsMap map[string]*Column
@@ -182,6 +203,15 @@ func (t Table) InsertQueryList(r *Rand, valueOverrides []map[string]interface{})
 	return buf.String(), args
 }
 
+// Drop and recreate the table with data seeded via the data generators.
+//
+// totalrows specifies the total number of rows to insert into the new table.
+// batchSize controls how many rows to insert in one INSERT statement (200 is
+// usually a good starting point), concurrency is the number of goroutines used
+// to insert the data.
+//
+// If concurrency is 0, it is set by default to 16. This allows the loader to
+// reuse the -concurrency flag (which is default 0).
 func (t Table) ReloadData(databaseConfig DatabaseConfig, totalrows int64, batchSize int64, concurrency int) {
 	if concurrency <= 0 { // apply default if no valid concurrency is given
 		concurrency = 16

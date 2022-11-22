@@ -33,6 +33,11 @@ type DatabaseConfig struct {
 	ConnectionMultiplier int
 }
 
+// A thin wrapper around https://pkg.go.dev/github.com/go-mysql-org/go-mysql/client#Conn
+// for now. It is possible in the future to extend this to support databases
+// other than MySQL.
+//
+// This should only be initialized via DatabaseConfig.Connection().
 type Connection struct {
 	*client.Conn
 	connList  []*client.Conn
