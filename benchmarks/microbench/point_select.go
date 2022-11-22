@@ -37,10 +37,6 @@ func NewPointSelect(config *mybench.BenchmarkConfig, table *mybench.Table, event
 	return workload
 }
 
-func (c *PointSelect) Config() mybench.WorkloadConfig {
-	return c.WorkloadConfig
-}
-
 func (c *PointSelect) Event(ctx mybench.WorkerContext[MicroBenchContextData]) error {
 	args := make([]interface{}, c.batchSize)
 	for i := 0; i < c.batchSize; i++ {

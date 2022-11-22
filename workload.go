@@ -57,6 +57,10 @@ type WorkloadConfig struct {
 	Visualization VisualizationConfig
 }
 
+func (w WorkloadConfig) Config() WorkloadConfig {
+	return w
+}
+
 func NewWorkloadConfigWithDefaults(c WorkloadConfig) WorkloadConfig {
 	if c.RateControl.OuterLoopRate == 0 {
 		c.RateControl.OuterLoopRate = 50
@@ -106,6 +110,11 @@ func NewWorkloadConfigWithDefaults(c WorkloadConfig) WorkloadConfig {
 type WorkloadInterface[ContextDataT any] interface {
 	// Returns the config for the workload. Should always return the same
 	// value.
+	//
+	// If the struct that implements this interface embeds WorkloadConfig, it
+	// does not need to manually define this method as WorkloadConfig already
+	// defines this method and structs that embeds WorkloadConfig will inherit
+	// that method.
 	Config() WorkloadConfig
 
 	// Run the code for a single event. Run your queries here. This function is
@@ -130,14 +139,24 @@ type WorkloadInterface[ContextDataT any] interface {
 	//
 	// This method creates a new context data object and it is called once per
 	// goroutine/BenchmarkWorker before the main event loop.
+	//
+	// If a workload does not need context data, the struct that implements
+	// workload interface should simply embed NoContextData, which defines this
+	// method.
 	NewContextData(*Connection) (ContextDataT, error)
 }
 
 // This is a convenience type defined to indicate that there's no context data.
 // If you don't need a custom context data for your workload, use this.
+//
+// Further, the workload should embed this struct so the NewContextData
+// function does not need to be defined
 type NoContextData struct{}
 
-func NewNoContextData() (NoContextData, error) {
+// Any struct that embeds NoContextData will inherit this method. If this
+// struct is also trying to implement WorkloadInterface, then it does not have
+// to define this method manually.
+func (NoContextData) NewContextData(*Connection) (NoContextData, error) {
 	return NoContextData{}, nil
 }
 

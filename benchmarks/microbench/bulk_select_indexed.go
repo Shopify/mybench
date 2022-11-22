@@ -32,10 +32,6 @@ func NewBulkSelectIndexed(config *mybench.BenchmarkConfig, table *mybench.Table,
 	return workload
 }
 
-func (c *BulkSelectIndexed) Config() mybench.WorkloadConfig {
-	return c.WorkloadConfig
-}
-
 func (c *BulkSelectIndexed) Event(ctx mybench.WorkerContext[MicroBenchContextData]) error {
 	args := []interface{}{
 		c.table.Generate(ctx.Rand, "idx2"),
