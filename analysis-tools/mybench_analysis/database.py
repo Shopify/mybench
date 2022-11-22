@@ -31,7 +31,7 @@ class Database(object):
 
     cur.close()
 
-  def run_data(self, run_table_name: str, remove_data_from_beginning: float = 0.0):
+  def run_data(self, run_table_name: str, note: str, remove_data_from_beginning: float = 0.0):
     query = f"SELECT * FROM {run_table_name}"
 
     logging.debug(f"reading data via {query}")
@@ -39,7 +39,7 @@ class Database(object):
 
     # TODO: read prometheus data if applicable
 
-    return Run(load_driver_data, remove_data_from_beginning=remove_data_from_beginning)
+    return Run(load_driver_data, note, remove_data_from_beginning=remove_data_from_beginning)
 
   def __del__(self):
     self.conn.close()
@@ -120,6 +120,6 @@ class Database(object):
   def time_sorted_runs(self, remove_data_from_beginning: float = 0.0) -> list[Run]:
     runs = []
     for meta in sorted(self.runs_meta, key=lambda m: datetime.strptime(m["start_time"], "%Y-%m-%dT%H:%M:%SZ")):
-      runs.append(self.run_data(meta["table_name"], remove_data_from_beginning))
+      runs.append(self.run_data(meta["table_name"], meta["note"], remove_data_from_beginning))
 
     return runs

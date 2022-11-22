@@ -7,9 +7,10 @@ import pandas
 from .utils import data_to_ellipse
 
 class Run(object):
-  def __init__(self, load_driver_data: pandas.DataFrame, remove_data_from_beginning: float = 0.0):
+  def __init__(self, load_driver_data: pandas.DataFrame, note: str, remove_data_from_beginning: float = 0.0):
     self.workloads = list(filter(lambda c: c != "__all__", load_driver_data["workload"].unique()))
     self.load_driver_data = load_driver_data
+    self.note = note
     self.remove_data_from_beginning = remove_data_from_beginning
 
     self.time_domain = (0, load_driver_data["seconds_since_start"].iat[-1])
