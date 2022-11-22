@@ -289,7 +289,7 @@ func (d *DataLogger) collectData() *DataSnapshot {
 	histograms := make(map[string][]*ExtendedHdrHistogram)
 	for _, workload := range d.Benchmark.workloads {
 		config := workload.Config()
-		histograms[config.Name] = make([]*ExtendedHdrHistogram, config.RateControl.Concurrency)
+		histograms[config.Name] = make([]*ExtendedHdrHistogram, config.RateControlConfig.Concurrency)
 	}
 
 	// Anonymous function declaration likely needs an allocation too (to capture
@@ -342,11 +342,11 @@ func (d *DataLogger) collectData() *DataSnapshot {
 				config.Visualization.LatencyHistMax,
 				config.Visualization.LatencyHistSize,
 			),
-			DesiredRate: config.RateControl.EventRate,
+			DesiredRate: config.RateControlConfig.EventRate,
 		}
 
 		allWorkloadsMergedHistogram.Merge(perWorkloadMergedHistogram)
-		dataSnapshot.AllWorkloadData.DesiredRate += config.RateControl.EventRate
+		dataSnapshot.AllWorkloadData.DesiredRate += config.RateControlConfig.EventRate
 	}
 
 	dataSnapshot.AllWorkloadData.IntervalData = allWorkloadsMergedHistogram.IntervalData(now, 1, 300000, 1000) // TODO: configurable

@@ -45,9 +45,9 @@ Having all this data in hundreds of independent Goroutines (`BenchmarkWorkers`) 
 Run a benchmark
 ---------------
 
-- Shopify orders benchmark: `make examplebench && build/examplebench -host mysql-1 -user sys.admin_rw -pass hunter2 -bench -multiplier 30`
+- Shopify orders benchmark: `make examplebench && build/examplebench -host mysql-1 -user sys.admin_rw -pass hunter2 -bench -eventrate 3000`
   - Change the host
-  - Change the multiplier. The base rate is only 100 event/s so turn it up!
+  - Change the event rate. The command above specifies 3000 events/s.
 - Go to https://localhost:8005 to see the monitoring web UI.
 
 Write your own benchmark

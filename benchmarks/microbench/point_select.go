@@ -15,15 +15,13 @@ type PointSelect struct {
 	batchSize int
 }
 
-func NewPointSelect(config *mybench.BenchmarkConfig, table *mybench.Table, eventRate float64, batchSize int) mybench.AbstractWorkload {
-	eventRate = eventRate * config.Multiplier
+func NewPointSelect(config *mybench.BenchmarkConfig, table *mybench.Table, rateScale float64, batchSize int) mybench.AbstractWorkload {
 	workloadInterface := &PointSelect{
 		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
-			Name:           "PointSelect_" + strconv.Itoa(batchSize),
-			DatabaseConfig: config.DatabaseConfig,
-			RateControl: mybench.RateControlConfig{
-				EventRate: eventRate,
-			},
+			Name:              "PointSelect_" + strconv.Itoa(batchSize),
+			DatabaseConfig:    config.DatabaseConfig,
+			RateControlConfig: config.RateControlConfig,
+			WorkloadScale:     rateScale,
 		}),
 		table:     table,
 		batchSize: batchSize,

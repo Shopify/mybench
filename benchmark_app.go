@@ -12,39 +12,43 @@ import (
 )
 
 type BenchmarkConfig struct {
+	Bench    bool
+	Load     bool
+	Duration time.Duration
+	LogFile  string
+	LogTable string
+	Note     string
+
 	DatabaseConfig DatabaseConfig
 
-	Bench bool
-	Load  bool
+	RateControlConfig RateControlConfig
 
-	LoadConcurrency int
-	HttpPort        int
-	Duration        time.Duration
-	Multiplier      float64
-	LogFile         string
-	LogTable        string
-	Note            string
+	HttpPort int
 }
 
 func NewBenchmarkConfig() *BenchmarkConfig {
 	config := &BenchmarkConfig{}
+
+	flag.BoolVar(&config.Load, "load", false, "load the data before the benchmark")
+	flag.BoolVar(&config.Bench, "bench", false, "run the benchmark")
+	flag.DurationVar(&config.Duration, "duration", 0, "duration of the benchmark")
+	flag.StringVar(&config.LogFile, "log", "data.sqlite", "the path to the log file")
+	flag.StringVar(&config.LogTable, "logtable", "", "the table name in the sqlite file to record to (default: based on the start time in RFC3399)")
+	flag.StringVar(&config.Note, "note", "", "a note to include in the meta table entry for this run")
 
 	flag.StringVar(&config.DatabaseConfig.Host, "host", "", "database host name")
 	flag.IntVar(&config.DatabaseConfig.Port, "port", 3306, "database port (default: 3306)")
 	flag.StringVar(&config.DatabaseConfig.User, "user", "root", "database user (default: root)")
 	flag.StringVar(&config.DatabaseConfig.Pass, "pass", "", "database password (default: empty)")
 	flag.StringVar(&config.DatabaseConfig.Database, "db", "mybench", "database name (default: mybench)")
+	flag.IntVar(&config.DatabaseConfig.ConnectionMultiplier, "connectionmultiplier", 1, "number of database connections per parallel worker (default: 1)")
 
-	flag.BoolVar(&config.Load, "load", false, "load the data before the benchmark")
-	flag.BoolVar(&config.Bench, "bench", false, "run the benchmark")
+	flag.Float64Var(&config.RateControlConfig.EventRate, "eventrate", 1000, "target event rate of the benchmark in requests per second (default: 1000)")
+	flag.IntVar(&config.RateControlConfig.Concurrency, "concurrency", 0, "number of parallel workers to use during the benchmark (default: auto)")
+	flag.Float64Var(&config.RateControlConfig.MaxEventRatePerWorker, "workermaxrate", 100, "maximum event rate per worker (default: 100)")
+	flag.Float64Var(&config.RateControlConfig.OuterLoopRate, "outerlooprate", 50, "desired rate of outer loop that batches events -- advanced option (default: 50)")
+
 	flag.IntVar(&config.HttpPort, "httpport", 8005, "port of the monitoring UI")
-	flag.DurationVar(&config.Duration, "duration", 0, "duration of the benchmark")
-	flag.Float64Var(&config.Multiplier, "multiplier", 1.0, "multiplier of the benchmark")
-	flag.StringVar(&config.LogFile, "log", "data.sqlite", "the path to the log file")
-	flag.StringVar(&config.LogTable, "logtable", "", "the table name in the sqlite file to record to (default: based on the start time in RFC3399)")
-	flag.StringVar(&config.Note, "note", "", "a note to include in the meta table entry for this run")
-
-	flag.IntVar(&config.LoadConcurrency, "load-concurrency", 16, "the concurrency to use during the load")
 
 	return config
 }
@@ -64,6 +68,10 @@ func (c BenchmarkConfig) Validate() error {
 
 	if c.LogFile == "" {
 		return errors.New("must specify log filename")
+	}
+
+	if c.DatabaseConfig.ConnectionMultiplier != 1 && c.RateControlConfig.Concurrency == 0 {
+		return errors.New("must specify -concurrency if -connectionmultiplier is specified")
 	}
 
 	return nil

@@ -13,11 +13,10 @@ type InsertSimpleTable struct {
 func NewInsertSimpleTable(exampleBench ExampleBench, table mybench.Table) mybench.AbstractWorkload {
 	workloadInterface := &InsertSimpleTable{
 		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
-			Name:           "InsertSimpleTable",
-			DatabaseConfig: exampleBench.BenchmarkConfig.DatabaseConfig,
-			RateControl: mybench.RateControlConfig{
-				EventRate: 50 * exampleBench.BenchmarkConfig.Multiplier,
-			},
+			Name:              "InsertSimpleTable",
+			DatabaseConfig:    exampleBench.BenchmarkConfig.DatabaseConfig,
+			RateControlConfig: exampleBench.BenchmarkConfig.RateControlConfig,
+			WorkloadScale:     0.5,
 		}),
 
 		table: table,
@@ -50,11 +49,10 @@ type UpdateSimpleTable struct {
 func NewUpdateSimpleTable(exampleBench ExampleBench, table mybench.Table) mybench.AbstractWorkload {
 	workloadInterface := &UpdateSimpleTable{
 		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
-			Name:           "UpdateSimpleTable",
-			DatabaseConfig: exampleBench.BenchmarkConfig.DatabaseConfig,
-			RateControl: mybench.RateControlConfig{
-				EventRate: 50 * exampleBench.BenchmarkConfig.Multiplier,
-			},
+			Name:              "UpdateSimpleTable",
+			DatabaseConfig:    exampleBench.BenchmarkConfig.DatabaseConfig,
+			RateControlConfig: exampleBench.BenchmarkConfig.RateControlConfig,
+			WorkloadScale:     0.5,
 		}),
 
 		table: table,

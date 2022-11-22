@@ -48,14 +48,7 @@ func (b ExampleBench) Name() string {
 }
 
 func (b ExampleBench) Workloads() ([]mybench.AbstractWorkload, error) {
-	// TODO: once there is a loader, we need to fetch the maximum id before the benchmark here to seed the auto increment generator.
-	conn, err := b.BenchmarkConfig.DatabaseConfig.Connection()
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-
-	idGen, err := mybench.NewAutoIncrementGeneratorFromDatabase(conn, b.BenchmarkConfig.DatabaseConfig.Database, "example_table", "id")
+	idGen, err := mybench.NewAutoIncrementGeneratorFromDatabase(b.BenchmarkConfig.DatabaseConfig, "example_table", "id")
 	if err != nil {
 		return nil, err
 	}
