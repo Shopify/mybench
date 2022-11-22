@@ -16,10 +16,10 @@ type RateControlConfig struct {
 	// Number of goroutines to drive the EventRate. Each goroutine will get the
 	// same portion of the EventRate. This needs to be increased if a single
 	// goroutine cannot drive the EventRate.
-	// If left to 0, it will be calculated with EventRate / MaxEventRatePerGoroutine.
+	// If not specified, it will be set to an approximately optimal number of MySQL threads (200).
 	Concurrency int
 
-	// The maximum event per goroutine. Used to calculate the concurrency if it is
+	// The maximum event per goroutine. Calculated from EventRate and Concurrency if it is
 	// not specified.
 	MaxEventRatePerGoroutine int
 
@@ -47,7 +47,11 @@ type WorkloadConfig struct {
 	Name string
 
 	// The database config used to create connection objects.
-	DatabaseConfig DatabaseConfig
+	BenchmarkConfig *BenchmarkConfig
+
+	// scales the workload by the given percentage
+	// this currently scales various RateControl parameters
+	WorkloadPctScale int
 
 	// Controls the event rate
 	RateControl RateControlConfig
@@ -62,6 +66,14 @@ func (w WorkloadConfig) Config() WorkloadConfig {
 }
 
 func NewWorkloadConfigWithDefaults(c WorkloadConfig) WorkloadConfig {
+	if c.RateControl.EventRate == 0.0 {
+		c.RateControl.EventRate = c.BenchmarkConfig.EventRate
+	}
+
+	if c.RateControl.Concurrency == 0 {
+		c.RateControl.Concurrency = c.BenchmarkConfig.Concurrency
+	}
+
 	if c.RateControl.OuterLoopRate == 0 {
 		c.RateControl.OuterLoopRate = 50
 	}
@@ -78,12 +90,13 @@ func NewWorkloadConfigWithDefaults(c WorkloadConfig) WorkloadConfig {
 		c.Visualization.LatencyHistSize = 1000
 	}
 
-	if c.RateControl.MaxEventRatePerGoroutine == 0 {
-		c.RateControl.MaxEventRatePerGoroutine = 100 // 2 Event per iteration by default.
+	if c.WorkloadPctScale > 0 {
+		c.RateControl.Concurrency = c.RateControl.Concurrency * c.WorkloadPctScale / 100
+		c.RateControl.EventRate = c.RateControl.EventRate * float64(c.WorkloadPctScale) / 100
 	}
 
-	if c.RateControl.Concurrency == 0 {
-		c.RateControl.Concurrency = int(math.Ceil(c.RateControl.EventRate / float64(c.RateControl.MaxEventRatePerGoroutine)))
+	if c.RateControl.MaxEventRatePerGoroutine == 0 {
+		c.RateControl.MaxEventRatePerGoroutine = int(math.Ceil(c.RateControl.EventRate / float64(c.RateControl.Concurrency)))
 	}
 
 	if c.Name == "" {

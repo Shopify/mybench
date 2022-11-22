@@ -18,9 +18,10 @@ type BenchmarkConfig struct {
 	Load  bool
 
 	LoadConcurrency int
+	Concurrency     int
 	HttpPort        int
 	Duration        time.Duration
-	Multiplier      float64
+	EventRate       float64
 	LogFile         string
 	LogTable        string
 	Note            string
@@ -39,10 +40,11 @@ func NewBenchmarkConfig() *BenchmarkConfig {
 	flag.BoolVar(&config.Bench, "bench", false, "run the benchmark")
 	flag.IntVar(&config.HttpPort, "httpport", 8005, "port of the monitoring UI")
 	flag.DurationVar(&config.Duration, "duration", 0, "duration of the benchmark")
-	flag.Float64Var(&config.Multiplier, "multiplier", 1.0, "multiplier of the benchmark")
+	flag.Float64Var(&config.EventRate, "eventrate", 1000, "target event rate of the benchmark in requests per second")
 	flag.StringVar(&config.LogFile, "log", "data.sqlite", "the path to the log file")
 	flag.StringVar(&config.LogTable, "logtable", "", "the table name in the sqlite file to record to (default: based on the start time in RFC3399)")
 	flag.StringVar(&config.Note, "note", "", "a note to include in the meta table entry for this run")
+	flag.IntVar(&config.Concurrency, "concurrency", 200, "the concurrency to use during the benchmark (default: 200)")
 
 	flag.IntVar(&config.LoadConcurrency, "load-concurrency", 16, "the concurrency to use during the load")
 

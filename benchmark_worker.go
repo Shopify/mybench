@@ -22,7 +22,7 @@ type BenchmarkWorker[ContextDataT any] struct {
 
 func NewBenchmarkWorker[ContextDataT any](workloadIface WorkloadInterface[ContextDataT]) (*BenchmarkWorker[ContextDataT], error) {
 	config := workloadIface.Config()
-	conn, err := config.DatabaseConfig.Connection()
+	conn, err := config.BenchmarkConfig.DatabaseConfig.Connection()
 	if err != nil {
 		return nil, err
 	}
