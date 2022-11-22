@@ -113,9 +113,9 @@ class Run(object):
       stddev = np.std(all_data["rate"])
       mean = np.mean(all_data["rate"])
       text = AnchoredText(
-        r"$d = {:.0f}$".format(all_data["desired_rate"].iat[0]) + "\n" + r"$\bar{{x}} = {:.0f}$".format(mean) + "\n" + r"$\sigma = {:.0f}$".format(stddev),
+        self.note + "\n" + r"$d = {:.0f}$".format(all_data["desired_rate"].iat[0]) + "\n" + r"$\bar{{x}} = {:.0f}$".format(mean) + "\n" + r"$\sigma = {:.0f}$".format(stddev),
         loc="lower center",
-        prop=dict(fontsize="x-small", ha="center"),
+        prop=dict(fontsize="xx-small", ha="center"),
         frameon=False,
       )
       ax.add_artist(text)
