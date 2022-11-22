@@ -55,7 +55,7 @@ func NewBenchmark(benchmarkName string, outputFilename string, outputTableName s
 		Benchmark:      b,
 	})
 
-	b.httpServer = NewHttpServer(b, httpPort)
+	b.httpServer = NewHttpServer(b, note, httpPort)
 
 	return b, err
 }

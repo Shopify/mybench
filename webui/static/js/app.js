@@ -557,6 +557,10 @@ async function main() {
 
   setInterval(async function () {
     const status_data = await get_status();
+    document.getElementById("runnote").innerHTML = "";
+    if (status_data.Note.length > 0) {
+        document.getElementById("runnote").innerHTML = "(" + status_data.Note + ")";
+    }
     update_plots(status_data);
   }, 5000);
 }
