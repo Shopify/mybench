@@ -11,7 +11,7 @@ type InsertSimpleTable struct {
 }
 
 func NewInsertSimpleTable(exampleBench ExampleBench, table mybench.Table) mybench.AbstractWorkload {
-	var workloadInterface mybench.WorkloadInterface[mybench.NoContextData] = &InsertSimpleTable{
+	workloadInterface := &InsertSimpleTable{
 		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
 			Name:           "InsertSimpleTable",
 			DatabaseConfig: exampleBench.BenchmarkConfig.DatabaseConfig,
@@ -23,7 +23,7 @@ func NewInsertSimpleTable(exampleBench ExampleBench, table mybench.Table) mybenc
 		table: table,
 	}
 
-	workload, err := mybench.NewWorkload(workloadInterface)
+	workload, err := mybench.NewWorkload[mybench.NoContextData](workloadInterface)
 	if err != nil {
 		panic(err)
 	}
@@ -48,7 +48,7 @@ type UpdateSimpleTable struct {
 }
 
 func NewUpdateSimpleTable(exampleBench ExampleBench, table mybench.Table) mybench.AbstractWorkload {
-	var workloadInterface mybench.WorkloadInterface[mybench.NoContextData] = &UpdateSimpleTable{
+	workloadInterface := &UpdateSimpleTable{
 		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
 			Name:           "UpdateSimpleTable",
 			DatabaseConfig: exampleBench.BenchmarkConfig.DatabaseConfig,
@@ -60,7 +60,7 @@ func NewUpdateSimpleTable(exampleBench ExampleBench, table mybench.Table) mybenc
 		table: table,
 	}
 
-	workload, err := mybench.NewWorkload(workloadInterface)
+	workload, err := mybench.NewWorkload[mybench.NoContextData](workloadInterface)
 	if err != nil {
 		panic(err)
 	}

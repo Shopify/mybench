@@ -13,7 +13,7 @@ type BulkSelectIndexed struct {
 
 func NewBulkSelectIndexed(config *mybench.BenchmarkConfig, table *mybench.Table, eventRate float64) mybench.AbstractWorkload {
 	eventRate = eventRate * config.Multiplier
-	var workloadInterface mybench.WorkloadInterface[MicroBenchContextData] = &BulkSelectIndexed{
+	workloadInterface := &BulkSelectIndexed{
 		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
 			Name:           "BulkSelectIndexed",
 			DatabaseConfig: config.DatabaseConfig,
@@ -24,7 +24,7 @@ func NewBulkSelectIndexed(config *mybench.BenchmarkConfig, table *mybench.Table,
 		table: table,
 	}
 
-	workload, err := mybench.NewWorkload(workloadInterface)
+	workload, err := mybench.NewWorkload[MicroBenchContextData](workloadInterface)
 	if err != nil {
 		panic(err)
 	}
