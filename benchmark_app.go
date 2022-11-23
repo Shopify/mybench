@@ -12,23 +12,29 @@ import (
 )
 
 type BenchmarkConfig struct {
+	Bench    bool
+	Load     bool
+	Duration time.Duration
+	LogFile  string
+	LogTable string
+	Note     string
+
 	DatabaseConfig DatabaseConfig
 
-	Bench bool
-	Load  bool
+	RateControlConfig RateControlConfig
 
-	LoadConcurrency int
-	Concurrency     int
-	HttpPort        int
-	Duration        time.Duration
-	EventRate       float64
-	LogFile         string
-	LogTable        string
-	Note            string
+	HttpPort int
 }
 
 func NewBenchmarkConfig() *BenchmarkConfig {
 	config := &BenchmarkConfig{}
+
+	flag.BoolVar(&config.Load, "load", false, "load the data before the benchmark")
+	flag.BoolVar(&config.Bench, "bench", false, "run the benchmark")
+	flag.DurationVar(&config.Duration, "duration", 0, "duration of the benchmark")
+	flag.StringVar(&config.LogFile, "log", "data.sqlite", "the path to the log file")
+	flag.StringVar(&config.LogTable, "logtable", "", "the table name in the sqlite file to record to (default: based on the start time in RFC3399)")
+	flag.StringVar(&config.Note, "note", "", "a note to include in the meta table entry for this run")
 
 	flag.StringVar(&config.DatabaseConfig.Host, "host", "", "database host name")
 	flag.IntVar(&config.DatabaseConfig.Port, "port", 3306, "database port (default: 3306)")
@@ -36,17 +42,10 @@ func NewBenchmarkConfig() *BenchmarkConfig {
 	flag.StringVar(&config.DatabaseConfig.Pass, "pass", "", "database password (default: empty)")
 	flag.StringVar(&config.DatabaseConfig.Database, "db", "mybench", "database name (default: mybench)")
 
-	flag.BoolVar(&config.Load, "load", false, "load the data before the benchmark")
-	flag.BoolVar(&config.Bench, "bench", false, "run the benchmark")
-	flag.IntVar(&config.HttpPort, "httpport", 8005, "port of the monitoring UI")
-	flag.DurationVar(&config.Duration, "duration", 0, "duration of the benchmark")
-	flag.Float64Var(&config.EventRate, "eventrate", 1000, "target event rate of the benchmark in requests per second")
-	flag.StringVar(&config.LogFile, "log", "data.sqlite", "the path to the log file")
-	flag.StringVar(&config.LogTable, "logtable", "", "the table name in the sqlite file to record to (default: based on the start time in RFC3399)")
-	flag.StringVar(&config.Note, "note", "", "a note to include in the meta table entry for this run")
-	flag.IntVar(&config.Concurrency, "concurrency", 200, "the concurrency to use during the benchmark (default: 200)")
+	flag.Float64Var(&config.RateControlConfig.EventRate, "eventrate", 1000, "target event rate of the benchmark in requests per second")
+	flag.IntVar(&config.RateControlConfig.Concurrency, "concurrency", 100, "the concurrency to use during the benchmark (default: 100)")
 
-	flag.IntVar(&config.LoadConcurrency, "load-concurrency", 16, "the concurrency to use during the load")
+	flag.IntVar(&config.HttpPort, "httpport", 8005, "port of the monitoring UI")
 
 	return config
 }

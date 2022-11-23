@@ -145,7 +145,7 @@ func (b MicroBench) RunLoader() error {
 		b.DatabaseConfig,
 		b.InitialNumRows,
 		500,
-		b.BenchmarkConfig.LoadConcurrency,
+		b.RateControlConfig.Concurrency,
 	)
 	return nil
 }

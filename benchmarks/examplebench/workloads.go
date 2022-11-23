@@ -14,7 +14,8 @@ func NewInsertSimpleTable(exampleBench ExampleBench, table mybench.Table) mybenc
 	workloadInterface := &InsertSimpleTable{
 		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
 			Name:             "InsertSimpleTable",
-			BenchmarkConfig:  exampleBench.BenchmarkConfig,
+			DatabaseConfig:   exampleBench.BenchmarkConfig.DatabaseConfig,
+			RateControl:      exampleBench.BenchmarkConfig.RateControlConfig,
 			WorkloadPctScale: 50,
 		}),
 
@@ -49,7 +50,8 @@ func NewUpdateSimpleTable(exampleBench ExampleBench, table mybench.Table) mybenc
 	workloadInterface := &UpdateSimpleTable{
 		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
 			Name:             "UpdateSimpleTable",
-			BenchmarkConfig:  exampleBench.BenchmarkConfig,
+			DatabaseConfig:   exampleBench.BenchmarkConfig.DatabaseConfig,
+			RateControl:      exampleBench.BenchmarkConfig.RateControlConfig,
 			WorkloadPctScale: 50,
 		}),
 

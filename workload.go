@@ -16,7 +16,7 @@ type RateControlConfig struct {
 	// Number of goroutines to drive the EventRate. Each goroutine will get the
 	// same portion of the EventRate. This needs to be increased if a single
 	// goroutine cannot drive the EventRate.
-	// If not specified, it will be set to an approximately optimal number of MySQL threads (200).
+	// If not specified, it will be set to an approximately optimal number of MySQL threads (100).
 	Concurrency int
 
 	// The maximum event per goroutine. Calculated from EventRate and Concurrency if it is
@@ -47,7 +47,7 @@ type WorkloadConfig struct {
 	Name string
 
 	// The database config used to create connection objects.
-	BenchmarkConfig *BenchmarkConfig
+	DatabaseConfig DatabaseConfig
 
 	// scales the workload by the given percentage
 	// this currently scales various RateControl parameters
@@ -66,16 +66,30 @@ func (w WorkloadConfig) Config() WorkloadConfig {
 }
 
 func NewWorkloadConfigWithDefaults(c WorkloadConfig) WorkloadConfig {
-	if c.RateControl.EventRate == 0.0 {
-		c.RateControl.EventRate = c.BenchmarkConfig.EventRate
+	if c.RateControl.EventRate == 0 {
+		c.RateControl.EventRate = 1000
 	}
 
 	if c.RateControl.Concurrency == 0 {
-		c.RateControl.Concurrency = c.BenchmarkConfig.Concurrency
+		c.RateControl.Concurrency = 100
 	}
 
 	if c.RateControl.OuterLoopRate == 0 {
 		c.RateControl.OuterLoopRate = 50
+	}
+
+	if c.WorkloadPctScale > 0 {
+		c.RateControl.Concurrency = c.RateControl.Concurrency * c.WorkloadPctScale / 100
+		c.RateControl.EventRate = c.RateControl.EventRate * float64(c.WorkloadPctScale) / 100
+	}
+
+	// We don't want less than one event/s per worker.
+	if c.RateControl.Concurrency > int(c.RateControl.EventRate) {
+		c.RateControl.Concurrency = int(c.RateControl.EventRate)
+	}
+
+	if c.RateControl.MaxEventRatePerGoroutine == 0 {
+		c.RateControl.MaxEventRatePerGoroutine = int(math.Ceil(c.RateControl.EventRate / float64(c.RateControl.Concurrency)))
 	}
 
 	if c.Visualization.LatencyHistMin == 0 {
@@ -88,15 +102,6 @@ func NewWorkloadConfigWithDefaults(c WorkloadConfig) WorkloadConfig {
 
 	if c.Visualization.LatencyHistSize == 0 {
 		c.Visualization.LatencyHistSize = 1000
-	}
-
-	if c.WorkloadPctScale > 0 {
-		c.RateControl.Concurrency = c.RateControl.Concurrency * c.WorkloadPctScale / 100
-		c.RateControl.EventRate = c.RateControl.EventRate * float64(c.WorkloadPctScale) / 100
-	}
-
-	if c.RateControl.MaxEventRatePerGoroutine == 0 {
-		c.RateControl.MaxEventRatePerGoroutine = int(math.Ceil(c.RateControl.EventRate / float64(c.RateControl.Concurrency)))
 	}
 
 	if c.Name == "" {
