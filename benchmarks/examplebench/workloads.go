@@ -6,11 +6,12 @@ import (
 
 type InsertSimpleTable struct {
 	mybench.WorkloadConfig
+	mybench.NoContextData
 	table mybench.Table
 }
 
 func NewInsertSimpleTable(exampleBench ExampleBench, table mybench.Table) mybench.AbstractWorkload {
-	var workloadInterface mybench.WorkloadInterface[mybench.NoContextData] = &InsertSimpleTable{
+	workloadInterface := &InsertSimpleTable{
 		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
 			Name:           "InsertSimpleTable",
 			DatabaseConfig: exampleBench.BenchmarkConfig.DatabaseConfig,
@@ -22,16 +23,12 @@ func NewInsertSimpleTable(exampleBench ExampleBench, table mybench.Table) mybenc
 		table: table,
 	}
 
-	workload, err := mybench.NewWorkload(workloadInterface)
+	workload, err := mybench.NewWorkload[mybench.NoContextData](workloadInterface)
 	if err != nil {
 		panic(err)
 	}
 
 	return workload
-}
-
-func (r *InsertSimpleTable) Config() mybench.WorkloadConfig {
-	return r.WorkloadConfig
 }
 
 func (r *InsertSimpleTable) Event(ctx mybench.WorkerContext[mybench.NoContextData]) error {
@@ -44,17 +41,14 @@ func (r *InsertSimpleTable) Event(ctx mybench.WorkerContext[mybench.NoContextDat
 	return err
 }
 
-func (r *InsertSimpleTable) NewContextData(conn *mybench.Connection) (mybench.NoContextData, error) {
-	return mybench.NewNoContextData()
-}
-
 type UpdateSimpleTable struct {
 	mybench.WorkloadConfig
+	mybench.NoContextData
 	table mybench.Table
 }
 
 func NewUpdateSimpleTable(exampleBench ExampleBench, table mybench.Table) mybench.AbstractWorkload {
-	var workloadInterface mybench.WorkloadInterface[mybench.NoContextData] = &UpdateSimpleTable{
+	workloadInterface := &UpdateSimpleTable{
 		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
 			Name:           "UpdateSimpleTable",
 			DatabaseConfig: exampleBench.BenchmarkConfig.DatabaseConfig,
@@ -66,16 +60,12 @@ func NewUpdateSimpleTable(exampleBench ExampleBench, table mybench.Table) mybenc
 		table: table,
 	}
 
-	workload, err := mybench.NewWorkload(workloadInterface)
+	workload, err := mybench.NewWorkload[mybench.NoContextData](workloadInterface)
 	if err != nil {
 		panic(err)
 	}
 
 	return workload
-}
-
-func (r *UpdateSimpleTable) Config() mybench.WorkloadConfig {
-	return r.WorkloadConfig
 }
 
 func (r *UpdateSimpleTable) Event(ctx mybench.WorkerContext[mybench.NoContextData]) error {
@@ -86,8 +76,4 @@ func (r *UpdateSimpleTable) Event(ctx mybench.WorkerContext[mybench.NoContextDat
 
 	_, err := ctx.Conn.Execute(query, args...)
 	return err
-}
-
-func (r *UpdateSimpleTable) NewContextData(conn *mybench.Connection) (mybench.NoContextData, error) {
-	return mybench.NewNoContextData()
 }

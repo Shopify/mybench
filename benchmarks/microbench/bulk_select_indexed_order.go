@@ -14,7 +14,7 @@ type BulkSelectIndexedOrder struct {
 
 func NewBulkSelectIndexedOrder(config *mybench.BenchmarkConfig, table *mybench.Table, eventRate float64, orderField string) mybench.AbstractWorkload {
 	eventRate = eventRate * config.Multiplier
-	var workloadInterface mybench.WorkloadInterface[MicroBenchContextData] = &BulkSelectIndexedOrder{
+	workloadInterface := &BulkSelectIndexedOrder{
 		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
 			Name:           "BulkSelectIndexedOrdered_" + orderField,
 			DatabaseConfig: config.DatabaseConfig,
@@ -26,16 +26,12 @@ func NewBulkSelectIndexedOrder(config *mybench.BenchmarkConfig, table *mybench.T
 		orderField: orderField,
 	}
 
-	workload, err := mybench.NewWorkload(workloadInterface)
+	workload, err := mybench.NewWorkload[MicroBenchContextData](workloadInterface)
 	if err != nil {
 		panic(err)
 	}
 
 	return workload
-}
-
-func (c *BulkSelectIndexedOrder) Config() mybench.WorkloadConfig {
-	return c.WorkloadConfig
 }
 
 func (c *BulkSelectIndexedOrder) Event(ctx mybench.WorkerContext[MicroBenchContextData]) error {
