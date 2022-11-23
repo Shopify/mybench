@@ -14,19 +14,22 @@ var webuiFiles embed.FS
 
 type StatusData struct {
 	CurrentTime   float64
+	Note          string
 	Workloads     []string
 	DataSnapshots []*DataSnapshot
 }
 
 type HttpServer struct {
 	benchmark *Benchmark
+	note      string
 	mux       *http.ServeMux
 	port      int
 }
 
-func NewHttpServer(benchmark *Benchmark, port int) *HttpServer {
+func NewHttpServer(benchmark *Benchmark, note string, port int) *HttpServer {
 	s := &HttpServer{
 		benchmark: benchmark,
+		note:      note,
 		mux:       http.NewServeMux(),
 		port:      port,
 	}
@@ -44,6 +47,7 @@ func NewHttpServer(benchmark *Benchmark, port int) *HttpServer {
 func (s *HttpServer) apiStatus(w http.ResponseWriter, req *http.Request) {
 	var statusData StatusData
 	statusData.DataSnapshots = s.benchmark.DataSnapshots()
+	statusData.Note = s.note
 
 	statusData.Workloads = make([]string, 0, len(s.benchmark.workloads))
 	for workloadName := range s.benchmark.workloads {
