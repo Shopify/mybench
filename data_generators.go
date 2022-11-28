@@ -368,37 +368,6 @@ func (g *AutoIncrementStringGenerator) Current() string {
 	return fmt.Sprintf("%d!%s", n, generateUniqueStringFromInt(n, g.length))
 }
 
-// Generates values from a discrete set of possible values.
-//
-// Sample from existing is the exact same as generation, which means it is
-// possible to generate values not in the database but available in the set of
-// values.
-type EnumGenerator[T any] struct {
-	values []T
-}
-
-func NewEnumGenerator[T any](values []T) *EnumGenerator[T] {
-	return &EnumGenerator[T]{
-		values: values,
-	}
-}
-
-func (g *EnumGenerator[T]) Generate(r *rand.Rand) interface{} {
-	return g.GenerateTyped(r)
-}
-
-func (g *EnumGenerator[T]) SampleFromExisting(r *rand.Rand) interface{} {
-	return g.SampleFromExistingTyped(r)
-}
-
-func (g *EnumGenerator[T]) GenerateTyped(r *rand.Rand) T {
-	return g.values[r.Intn(len(g.values))]
-}
-
-func (g *EnumGenerator[T]) SampleFromExistingTyped(r *rand.Rand) T {
-	return g.GenerateTyped(r)
-}
-
 // Generates a datetime value that corresponds to the now time.
 //
 // Sample from existing does not work with this field and will panic.
