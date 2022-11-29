@@ -56,6 +56,14 @@ func NewAutoIncrementGeneratorTwo(min, current int64) *NumberGenerator[int64] {
 // BoundedCardinalityStringGenerator.
 type RandomLengthStringGenerator struct {
 	RandomNumberDistribution[int64]
+	Characters string
+}
+
+func NewRandomLengthStringGenerator(dist RandomNumberDistribution[int64]) *RandomLengthStringGenerator {
+	return &RandomLengthStringGenerator{
+		RandomNumberDistribution: dist,
+		Characters:               "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+	}
 }
 
 func (g *RandomLengthStringGenerator) Generate(r *rand.Rand) interface{} {
@@ -67,7 +75,7 @@ func (g *RandomLengthStringGenerator) GenerateTyped(r *rand.Rand) string {
 
 	buf := make([]byte, n)
 	for i := range buf {
-		buf[i] = characters[r.Intn(len(characters))]
+		buf[i] = g.Characters[r.Intn(len(g.Characters))]
 	}
 
 	return string(buf)
