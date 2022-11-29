@@ -2,13 +2,12 @@ package mybench
 
 import (
 	"context"
-	"math/rand"
 	"time"
 )
 
 type WorkerContext[T any] struct {
 	Conn *Connection
-	Rand *rand.Rand
+	Rand *Rand
 	Data T
 }
 
@@ -31,7 +30,7 @@ func NewBenchmarkWorker[ContextDataT any](workloadIface WorkloadInterface[Contex
 		workloadIface: workloadIface,
 		context: WorkerContext[ContextDataT]{
 			Conn: conn,
-			Rand: rand.New(rand.NewSource(time.Now().Unix())),
+			Rand: NewRand(),
 		},
 	}
 

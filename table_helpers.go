@@ -3,10 +3,8 @@ package mybench
 import (
 	"fmt"
 	"math"
-	"math/rand"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -42,11 +40,11 @@ func InitializeTable(t Table) Table {
 	return t
 }
 
-func (t Table) Generate(r *rand.Rand, column string) interface{} {
+func (t Table) Generate(r *Rand, column string) interface{} {
 	return t.columnsMap[column].Generator.Generate(r)
 }
 
-func (t Table) SampleFromExisting(r *rand.Rand, column string) interface{} {
+func (t Table) SampleFromExisting(r *Rand, column string) interface{} {
 	return t.columnsMap[column].Generator.SampleFromExisting(r)
 }
 
@@ -102,7 +100,7 @@ func (t Table) DropTableQuery() string {
 	return fmt.Sprintf("DROP TABLE IF EXISTS %s", t.Name)
 }
 
-func (t Table) InsertQuery(r *rand.Rand, batchSize int, valueOverride map[string]interface{}) (string, []interface{}) {
+func (t Table) InsertQuery(r *Rand, batchSize int, valueOverride map[string]interface{}) (string, []interface{}) {
 	var buf strings.Builder
 
 	buf.WriteString(fmt.Sprintf("INSERT INTO `%s` (", t.Name))
@@ -143,7 +141,7 @@ func (t Table) InsertQuery(r *rand.Rand, batchSize int, valueOverride map[string
 	return buf.String(), args
 }
 
-func (t Table) InsertQueryList(r *rand.Rand, valueOverrides []map[string]interface{}) (string, []interface{}) {
+func (t Table) InsertQueryList(r *Rand, valueOverrides []map[string]interface{}) (string, []interface{}) {
 	var buf strings.Builder
 
 	buf.WriteString(fmt.Sprintf("INSERT INTO `%s` (", t.Name))
@@ -225,7 +223,7 @@ func (t Table) ReloadData(databaseConfig DatabaseConfig, totalrows int64, batchS
 			}
 			defer conn.Close()
 
-			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			r := NewRand()
 
 			for {
 				batchSize, open := <-batchSizeChan
