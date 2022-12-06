@@ -41,8 +41,8 @@ func NewBenchmarkWorker[ContextDataT any](workloadIface WorkloadInterface[Contex
 	}
 
 	looper := &DiscretizedLooper{
-		EventRate:     config.RateControl.EventRate / float64(config.RateControl.Concurrency),
-		OuterLoopRate: config.RateControl.OuterLoopRate,
+		EventRate:     config.RateControlConfig.EventRate / float64(config.RateControlConfig.Concurrency),
+		OuterLoopRate: config.RateControlConfig.OuterLoopRate,
 		Event: func() error {
 			return worker.workloadIface.Event(worker.context)
 		},

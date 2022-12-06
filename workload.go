@@ -15,13 +15,13 @@ type RateControlConfig struct {
 
 	// Number of goroutines to drive the EventRate. Each goroutine will get the
 	// same portion of the EventRate. This needs to be increased if a single
-	// goroutine cannot drive the EventRate.
-	// If left to 0, it will be calculated with EventRate / MaxEventRatePerGoroutine.
+	// goroutine cannot drive the EventRate.  If not specified, it will be
+	// calculated from EventRate and MaxEventRatePerWorker.
 	Concurrency int
 
-	// The maximum event per goroutine. Used to calculate the concurrency if it is
-	// not specified.
-	MaxEventRatePerGoroutine int
+	// The maximum event rate per goroutine, used to calculate Concurrency.
+	// If not specified, it will default to 100.
+	MaxEventRatePerWorker float64
 
 	// The desired rate of the outer loop that batches events. Default: 50.
 	OuterLoopRate float64
@@ -49,8 +49,12 @@ type WorkloadConfig struct {
 	// The database config used to create connection objects.
 	DatabaseConfig DatabaseConfig
 
+	// scales the workload by the given percentage
+	// this currently scales various RateControl parameters
+	WorkloadScale float64
+
 	// Controls the event rate
-	RateControl RateControlConfig
+	RateControlConfig RateControlConfig
 
 	// Configures the visualization for this workload.
 	// Some workload may know the latency bounds, and may wish to choose a better scale for the histograms
@@ -62,32 +66,55 @@ func (w WorkloadConfig) Config() WorkloadConfig {
 }
 
 func NewWorkloadConfigWithDefaults(c WorkloadConfig) WorkloadConfig {
-	if c.RateControl.OuterLoopRate == 0 {
-		c.RateControl.OuterLoopRate = 50
+	if c.Name == "" {
+		panic("must specify workload Name")
 	}
 
+	if c.DatabaseConfig.ConnectionMultiplier < 0 {
+		panic("must specify positive ConnectionMultiplier")
+	}
+
+	// Apply RateControlConfig defaults as needed
+	if c.RateControlConfig.EventRate == 0 {
+		c.RateControlConfig.EventRate = 1000
+	}
+	if c.RateControlConfig.MaxEventRatePerWorker == 0 {
+		c.RateControlConfig.MaxEventRatePerWorker = 100
+	}
+	if c.RateControlConfig.OuterLoopRate == 0 {
+		c.RateControlConfig.OuterLoopRate = 50
+	}
+
+	// If Concurrency is not specified, calculate it from EventRate and MaxEventRatePerWorker
+	if c.RateControlConfig.Concurrency == 0 {
+		if c.DatabaseConfig.ConnectionMultiplier > 1 {
+			panic("if ConnectionMultiplier is specified, Concurrency must be specified")
+		}
+		c.RateControlConfig.Concurrency = int(math.Ceil(c.RateControlConfig.EventRate / float64(c.RateControlConfig.MaxEventRatePerWorker)))
+	}
+	if c.RateControlConfig.Concurrency > int(c.RateControlConfig.EventRate) {
+		c.RateControlConfig.Concurrency = int(c.RateControlConfig.EventRate)
+		logrus.Warnf("Concurrency is too high for the given EventRate. Reducing Concurrency to %d", c.RateControlConfig.Concurrency)
+	}
+
+	// Apply the workload scale to EventRate and Concurrency
+	if c.WorkloadScale < 0 || c.WorkloadScale > 1 {
+		panic("WorkloadScale (if specified) must be between 0 and 1")
+	} else if c.WorkloadScale == 0 { // if not specified, default to 1
+		c.WorkloadScale = 1
+	}
+	c.RateControlConfig.EventRate = c.RateControlConfig.EventRate * c.WorkloadScale
+	c.RateControlConfig.Concurrency = int(math.Ceil(float64(c.RateControlConfig.Concurrency) * c.WorkloadScale))
+
+	// Apply Visualization defaults as needed
 	if c.Visualization.LatencyHistMin == 0 {
 		c.Visualization.LatencyHistMin = 0
 	}
-
 	if c.Visualization.LatencyHistMax == 0 {
 		c.Visualization.LatencyHistMax = 50000
 	}
-
 	if c.Visualization.LatencyHistSize == 0 {
 		c.Visualization.LatencyHistSize = 1000
-	}
-
-	if c.RateControl.MaxEventRatePerGoroutine == 0 {
-		c.RateControl.MaxEventRatePerGoroutine = 100 // 2 Event per iteration by default.
-	}
-
-	if c.RateControl.Concurrency == 0 {
-		c.RateControl.Concurrency = int(math.Ceil(c.RateControl.EventRate / float64(c.RateControl.MaxEventRatePerGoroutine)))
-	}
-
-	if c.Name == "" {
-		panic("must specify Name")
 	}
 
 	return c
@@ -213,8 +240,8 @@ func NewWorkload[ContextDataT any](workloadIface WorkloadInterface[ContextDataT]
 	}
 
 	var err error
-	workload.workers = make([]*BenchmarkWorker[ContextDataT], workload.RateControl.Concurrency)
-	for i := 0; i < workload.RateControl.Concurrency; i++ {
+	workload.workers = make([]*BenchmarkWorker[ContextDataT], workload.RateControlConfig.Concurrency)
+	for i := 0; i < workload.RateControlConfig.Concurrency; i++ {
 		workload.workers[i], err = NewBenchmarkWorker(workloadIface)
 		if err != nil {
 			return nil, err
@@ -225,9 +252,9 @@ func NewWorkload[ContextDataT any](workloadIface WorkloadInterface[ContextDataT]
 }
 
 func (w *Workload[ContextDataT]) Run(ctx context.Context, startTime time.Time) {
-	w.workersWg.Add(w.RateControl.Concurrency)
-	w.logger.WithFields(logrus.Fields{"concurrency": w.RateControl.Concurrency, "rate": w.RateControl.EventRate}).Info("starting benchmark workers")
-	for i := 0; i < w.RateControl.Concurrency; i++ {
+	w.workersWg.Add(w.RateControlConfig.Concurrency)
+	w.logger.WithFields(logrus.Fields{"concurrency": w.RateControlConfig.Concurrency, "rate": w.RateControlConfig.EventRate}).Info("starting benchmark workers")
+	for i := 0; i < w.RateControlConfig.Concurrency; i++ {
 		go func(worker *BenchmarkWorker[ContextDataT]) {
 			defer w.workersWg.Done()
 			err := worker.Run(ctx, startTime)

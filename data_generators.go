@@ -261,8 +261,14 @@ func NewAutoIncrementGenerator(min, current int64) *AutoIncrementGenerator {
 	return &AutoIncrementGenerator{min, atomic.NewInt64(current)}
 }
 
-func NewAutoIncrementGeneratorFromDatabase(conn *Connection, database, table, column string) (*AutoIncrementGenerator, error) {
-	query := fmt.Sprintf("SELECT MIN(%s), MAX(%s) FROM %s.%s", column, column, database, table)
+func NewAutoIncrementGeneratorFromDatabase(databaseConfig DatabaseConfig, table, column string) (*AutoIncrementGenerator, error) {
+	conn, err := databaseConfig.Connection()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	query := fmt.Sprintf("SELECT MIN(%s), MAX(%s) FROM %s.%s", column, column, databaseConfig.Database, table)
 	res, err := conn.Execute(query)
 	if err != nil {
 		return nil, err

@@ -12,15 +12,13 @@ type BulkSelectIndexedFilter struct {
 	filterField string
 }
 
-func NewBulkSelectIndexedFilter(config *mybench.BenchmarkConfig, table *mybench.Table, eventRate float64, filterField string) mybench.AbstractWorkload {
-	eventRate = eventRate * config.Multiplier
+func NewBulkSelectIndexedFilter(config *mybench.BenchmarkConfig, table *mybench.Table, rateScale float64, filterField string) mybench.AbstractWorkload {
 	workloadInterface := &BulkSelectIndexedFilter{
 		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
-			Name:           "BulkSelectIndexedFilter_" + filterField,
-			DatabaseConfig: config.DatabaseConfig,
-			RateControl: mybench.RateControlConfig{
-				EventRate: eventRate,
-			},
+			Name:              "BulkSelectIndexedFilter_" + filterField,
+			DatabaseConfig:    config.DatabaseConfig,
+			RateControlConfig: config.RateControlConfig,
+			WorkloadScale:     rateScale,
 		}),
 		table:       table,
 		filterField: filterField,
