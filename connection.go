@@ -30,8 +30,8 @@ type DatabaseConfig struct {
 	ConnectionMultiplier int
 }
 type Connection struct {
-	ConnList  []*client.Conn
-	ConnIndex int
+	connList  []*client.Conn
+	connIndex int
 }
 
 // Creates a new database if it doesn't exist
@@ -65,19 +65,19 @@ func (c DatabaseConfig) Connection() (*Connection, error) {
 		connList[i] = conn
 	}
 	return &Connection{
-		ConnList:  connList,
-		ConnIndex: 0,
+		connList:  connList,
+		connIndex: 0,
 	}, nil
 }
 
 func (c *Connection) GetConn() *client.Conn {
-	c.ConnIndex = (c.ConnIndex + 1) % len(c.ConnList)
-	return c.ConnList[c.ConnIndex]
+	c.connIndex = (c.connIndex + 1) % len(c.connList)
+	return c.connList[c.connIndex]
 }
 
 func (c *Connection) Close() error {
 	var err error
-	for _, conn := range c.ConnList {
+	for _, conn := range c.connList {
 		err = conn.Close()
 		if err != nil {
 			return err
