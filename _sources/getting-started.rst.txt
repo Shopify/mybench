@@ -41,13 +41,13 @@ Once this is done, you can then run the benchmark:
       --user=username \
       --pass=password \
       --bench \
-      --multiplier=100
+      --eventrate=10000
 
-The default event rate for examplebench is 100 event/s split evenly between its
-two workloads. The ``--multiplier=100`` option multiplies the event rate by
-100, resulting in an overall event rate of 10,000 events/s. You can then go to
-https://localhost:8005 to see the real-time monitoring UI. This should show
-something similar to:
+The default event rate for examplebench is 1000 event/s split evenly between its
+various workloads. The ``--eventrate=10000`` option overrides this, specifying
+an event rate 10x the default, automatically distributed among the defined workloads.
+You can then go to https://localhost:8005 to see the real-time monitoring UI. 
+This should show something similar to:
 
 .. image:: images/screenshot.png
 

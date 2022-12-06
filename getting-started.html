@@ -64,14 +64,14 @@ data (in the table <code class="docutils literal notranslate"><span class="pre">
    --user<span class="o">=</span>username <span class="se">\</span>
    --pass<span class="o">=</span>password <span class="se">\</span>
    --bench <span class="se">\</span>
-   --multiplier<span class="o">=</span><span class="m">100</span>
+   --eventrate<span class="o">=</span><span class="m">10000</span>
 </pre></div>
 </div>
-<p>The default event rate for examplebench is 100 event/s split evenly between its
-two workloads. The <code class="docutils literal notranslate"><span class="pre">--multiplier=100</span></code> option multiplies the event rate by
-100, resulting in an overall event rate of 10,000 events/s. You can then go to
-<a class="reference external" href="https://localhost:8005">https://localhost:8005</a> to see the real-time monitoring UI. This should show
-something similar to:</p>
+<p>The default event rate for examplebench is 1000 event/s split evenly between its
+various workloads. The <code class="docutils literal notranslate"><span class="pre">--eventrate=10000</span></code> option overrides this, specifying
+an event rate 10x the default, automatically distributed among the defined workloads.
+You can then go to <a class="reference external" href="https://localhost:8005">https://localhost:8005</a> to see the real-time monitoring UI.
+This should show something similar to:</p>
 <img alt="_images/screenshot.png" src="_images/screenshot.png" />
 <p>By default, the test will go on indefinitely (a fixed duration can be specified
 using a config option). Pressing <code class="docutils literal notranslate"><span class="pre">CTRL+C</span></code> will abort the test. The data will
