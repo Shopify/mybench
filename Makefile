@@ -12,4 +12,4 @@ clean:
 	rm build -rf
 
 test:
-	go test -count=1 -test.v
+	go test -v ./...

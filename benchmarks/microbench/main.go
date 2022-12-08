@@ -23,7 +23,7 @@ func NewMicroBenchTable(idGen *mybench.AutoIncrementGenerator, indexCardinality 
 			{
 				Name:       "idx1",
 				Definition: "VARCHAR(255)",
-				Generator:  mybench.NewBoundedCardinalityStringGenerator(indexCardinality, 30),
+				Generator:  mybench.NewUniformCardinalityStringGenerator(indexCardinality, 30),
 			},
 			{
 				Name:       "idx2",
@@ -33,7 +33,7 @@ func NewMicroBenchTable(idGen *mybench.AutoIncrementGenerator, indexCardinality 
 			{
 				Name:       "data1",
 				Definition: "VARCHAR(255)",
-				Generator:  mybench.NewTotallyRandomStringGenerator(10, 200),
+				Generator:  mybench.NewUniformLengthStringGenerator(10, 200),
 			},
 			{
 				Name:       "data2",

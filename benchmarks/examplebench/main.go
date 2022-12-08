@@ -18,7 +18,7 @@ func NewSimpleTable(idGen *mybench.AutoIncrementGenerator) mybench.Table {
 			{
 				Name:       "data",
 				Definition: "VARCHAR(255)",
-				Generator:  mybench.NewTotallyRandomStringGenerator(10, 200),
+				Generator:  mybench.NewUniformLengthStringGenerator(10, 200),
 			},
 		},
 		PrimaryKey: []string{"id"},
