@@ -2,6 +2,7 @@ package mybench
 
 import (
 	"context"
+	"math"
 	"sync"
 	"time"
 
@@ -9,8 +10,10 @@ import (
 )
 
 type Benchmark struct {
+	BenchmarkConfig
+
 	Name        string
-	LogInterval time.Duration
+	LogInterval time.Duration // TODO: make these two values configurable (move into BenchmarkConfig maybe)
 	LogRingSize int
 
 	logger    logrus.FieldLogger
@@ -30,14 +33,15 @@ type Benchmark struct {
 	httpServer *HttpServer
 }
 
-func NewBenchmark(benchmarkName string, outputFilename string, outputTableName string, note string, httpPort int) (*Benchmark, error) {
+func NewBenchmark(benchmarkName string, benchmarkConfig BenchmarkConfig) (*Benchmark, error) {
 	b := &Benchmark{
-		Name:         benchmarkName,
-		LogInterval:  1 * time.Second,
-		workloads:    make(map[string]AbstractWorkload),
-		logger:       logrus.WithField("tag", "benchmark").WithField("benchmark", benchmarkName),
-		workloadWg:   &sync.WaitGroup{},
-		dataLoggerWg: &sync.WaitGroup{},
+		BenchmarkConfig: benchmarkConfig,
+		Name:            benchmarkName,
+		LogInterval:     1 * time.Second,
+		workloads:       make(map[string]AbstractWorkload),
+		logger:          logrus.WithField("tag", "benchmark").WithField("benchmark", benchmarkName),
+		workloadWg:      &sync.WaitGroup{},
+		dataLoggerWg:    &sync.WaitGroup{},
 	}
 
 	b.LogRingSize = int((10*time.Minute)/b.LogInterval) + 1
@@ -49,13 +53,13 @@ func NewBenchmark(benchmarkName string, outputFilename string, outputTableName s
 	b.dataLogger, err = NewDataLogger(&DataLogger{
 		Interval:       b.LogInterval,
 		RingSize:       b.LogRingSize,
-		OutputFilename: outputFilename,
-		TableName:      outputTableName,
-		Note:           note,
+		OutputFilename: benchmarkConfig.LogFile,
+		TableName:      benchmarkConfig.LogTable,
+		Note:           benchmarkConfig.Note,
 		Benchmark:      b,
 	})
 
-	b.httpServer = NewHttpServer(b, note, httpPort)
+	b.httpServer = NewHttpServer(b, benchmarkConfig.Note, benchmarkConfig.HttpPort)
 
 	return b, err
 }
@@ -79,8 +83,25 @@ func (b *Benchmark) Start() {
 
 	b.workloadWg.Add(len(b.workloads))
 	for _, workload := range b.workloads {
+		// Calculate per workload rate control config by scaling it with workload scale
+		var perWorkloadRateControlConfig RateControlConfig = b.BenchmarkConfig.RateControlConfig // take a copy
+		workloadScale := workload.Config().WorkloadScale
+
+		perWorkloadRateControlConfig.Concurrency = int(math.Ceil(float64(b.BenchmarkConfig.RateControlConfig.Concurrency) * workloadScale))
+		perWorkloadRateControlConfig.EventRate = b.BenchmarkConfig.RateControlConfig.EventRate * workloadScale
+
+		// We need to set the RateControlConfig on the workload because the
+		// DataLogger needs to know the concurrency and event rate of each workload.
+		// We can't pass the RateControlConfig to workload.Run and set it in there,
+		// as doing so would introduce a data race: the workload.Run is called in a
+		// goroutine and DataLogger.Run is called in another goroutine. It is thus
+		// possible that DataLogger.Run will try to fetch the RateControlConfig on
+		// the Workload before it is set.
+		workload.FinishInitialization(b.BenchmarkConfig.DatabaseConfig, perWorkloadRateControlConfig)
+
 		go func(workload AbstractWorkload) {
 			defer b.workloadWg.Done()
+
 			workload.Run(b.workloadCtx, b.startTime)
 		}(workload)
 	}

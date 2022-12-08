@@ -19,9 +19,8 @@ type BenchmarkWorker[ContextDataT any] struct {
 	context       WorkerContext[ContextDataT]
 }
 
-func NewBenchmarkWorker[ContextDataT any](workloadIface WorkloadInterface[ContextDataT]) (*BenchmarkWorker[ContextDataT], error) {
-	config := workloadIface.Config()
-	conn, err := config.DatabaseConfig.Connection()
+func NewBenchmarkWorker[ContextDataT any](workloadIface WorkloadInterface[ContextDataT], databaseConfig DatabaseConfig, rateControlConfig RateControlConfig) (*BenchmarkWorker[ContextDataT], error) {
+	conn, err := databaseConfig.Connection()
 	if err != nil {
 		return nil, err
 	}
@@ -40,8 +39,8 @@ func NewBenchmarkWorker[ContextDataT any](workloadIface WorkloadInterface[Contex
 	}
 
 	looper := &DiscretizedLooper{
-		EventRate:     config.RateControlConfig.EventRate / float64(config.RateControlConfig.Concurrency),
-		OuterLoopRate: config.RateControlConfig.OuterLoopRate,
+		EventRate:     rateControlConfig.EventRate / float64(rateControlConfig.Concurrency),
+		OuterLoopRate: rateControlConfig.OuterLoopRate,
 		Event: func() error {
 			return worker.workloadIface.Event(worker.context)
 		},
@@ -56,7 +55,8 @@ func NewBenchmarkWorker[ContextDataT any](workloadIface WorkloadInterface[Contex
 	return worker, nil
 }
 
-func (b *BenchmarkWorker[ContextDataT]) Run(ctx context.Context, startTime time.Time) error {
+func (b *BenchmarkWorker[ContextDataT]) Run(ctx context.Context, startTime time.Time, databaseConfig DatabaseConfig, rateControlConfig RateControlConfig) error {
+	// TODO: kind of weird that the conn is opened in NewBenchmarkWorker but closed here. This should maybe be fixed
 	defer b.context.Conn.Close()
 	b.onlineHist = NewOnlineHistogram(startTime)
 	return b.looper.Run(ctx)

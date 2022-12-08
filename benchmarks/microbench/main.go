@@ -106,27 +106,27 @@ func (b MicroBench) Workloads() ([]mybench.AbstractWorkload, error) {
 
 	workloads := []mybench.AbstractWorkload{}
 	if b.BulkSelectIndexedRateScale > 0 {
-		workloads = append(workloads, NewBulkSelectIndexed(b.BenchmarkConfig, &table, b.BulkSelectIndexedRateScale))
+		workloads = append(workloads, NewBulkSelectIndexed(&table, b.BulkSelectIndexedRateScale))
 	}
 
 	if b.BulkSelectIndexedOrderIndexedRateScale > 0 {
-		workloads = append(workloads, NewBulkSelectIndexedOrder(b.BenchmarkConfig, &table, b.BulkSelectIndexedOrderIndexedRateScale, "idx1"))
+		workloads = append(workloads, NewBulkSelectIndexedOrder(&table, b.BulkSelectIndexedOrderIndexedRateScale, "idx1"))
 	}
 
 	if b.BulkSelectIndexedOrderNonIndexedRateScale > 0 {
-		workloads = append(workloads, NewBulkSelectIndexedOrder(b.BenchmarkConfig, &table, b.BulkSelectIndexedOrderNonIndexedRateScale, "data1"))
+		workloads = append(workloads, NewBulkSelectIndexedOrder(&table, b.BulkSelectIndexedOrderNonIndexedRateScale, "data1"))
 	}
 
 	if b.BulkSelectIndexedFilterRateScale > 0 {
-		workloads = append(workloads, NewBulkSelectIndexedFilter(b.BenchmarkConfig, &table, b.BulkSelectIndexedFilterRateScale, "b"))
+		workloads = append(workloads, NewBulkSelectIndexedFilter(&table, b.BulkSelectIndexedFilterRateScale, "b"))
 	}
 
 	if b.PointSelectRateScale > 0 {
-		workloads = append(workloads, NewPointSelect(b.BenchmarkConfig, &table, b.PointSelectRateScale, 1))
+		workloads = append(workloads, NewPointSelect(&table, b.PointSelectRateScale, 1))
 	}
 
 	if b.BatchPointSelectRateScale > 0 {
-		workloads = append(workloads, NewPointSelect(b.BenchmarkConfig, &table, b.BatchPointSelectRateScale, 200))
+		workloads = append(workloads, NewPointSelect(&table, b.BatchPointSelectRateScale, 200))
 	}
 
 	return workloads, nil
