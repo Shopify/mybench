@@ -108,6 +108,9 @@ func (g *UniformFloatGenerator) SampleFromExistingTyped(r *Rand) float64 {
 	return g.GenerateTyped(r)
 }
 
+// Generates a random integer value according to a normal distribution.
+//
+// Sample from existing is the same as generation.
 type NormalIntGenerator struct {
 	mean   int64
 	stddev int64
@@ -581,10 +584,10 @@ func (g *UniformDatetimeGenerator) Generate(r *Rand) interface{} {
 func (g *UniformDatetimeGenerator) GenerateTyped(r *Rand) time.Time {
 	if g.generateNow {
 		g.firstGenerateOnce.Do(func() {
-			g.firstGenerateTime = time.Now()
+			g.firstGenerateTime = time.Now().UTC()
 		})
 
-		return time.Now()
+		return time.Now().UTC()
 	}
 
 	return g.SampleFromExistingTyped(r)
@@ -606,7 +609,7 @@ func (g *UniformDatetimeGenerator) SampleFromExistingTyped(r *Rand) time.Time {
 	idx := r.Intn(n)
 	var randomInterval DatetimeInterval
 	if idx == len(g.intervals) {
-		randomInterval = DatetimeInterval{Start: g.firstGenerateTime, End: time.Now()}
+		randomInterval = DatetimeInterval{Start: g.firstGenerateTime, End: time.Now().UTC()}
 	} else {
 		randomInterval = g.intervals[idx]
 	}

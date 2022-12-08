@@ -50,10 +50,6 @@ func (r *Rand) HistInt(hist HistogramDistribution) int64 {
 	return int64(math.Round(r.HistFloat(hist)))
 }
 
-func interpolate(x0, y0, x1, y1, x float64) float64 {
-	return y0 + (x-x0)*(y1-y0)/(x1-x0)
-}
-
 // xs and ys must be sorted and must have the same size
 func interp1d(xs, ys []float64, x float64) (float64, error) {
 	// This is the index to insert x into xs, which means it will be >= the index
@@ -79,12 +75,13 @@ func interp1d(xs, ys []float64, x float64) (float64, error) {
 	x0, x1 := xs[i-1], xs[i]
 	y0, y1 := ys[i-1], ys[i]
 
-	return interpolate(x0, y0, x1, y1, x), nil
+	return y0 + (x-x0)*(y1-y0)/(x1-x0), nil
 }
 
-// This generates float64 values based on a histogram distribution.
-//
-// How this generator work is relatively simple:
+// This generates float64 values based on a discrete probability distribution
+// (represented via a histogram) via the inverse transform sampling algorithm
+// (https://en.wikipedia.org/wiki/Inverse_transform_sampling). Specifically,
+// the steps followed are:
 //
 //  1. Normalize the frequency values of the histogram to values of between 0
 //     and 1.
