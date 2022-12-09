@@ -10,24 +10,17 @@ type InsertSimpleTable struct {
 	table mybench.Table
 }
 
-func NewInsertSimpleTable(exampleBench ExampleBench, table mybench.Table) mybench.AbstractWorkload {
+func NewInsertSimpleTable(table mybench.Table) mybench.AbstractWorkload {
 	workloadInterface := &InsertSimpleTable{
-		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
-			Name:              "InsertSimpleTable",
-			DatabaseConfig:    exampleBench.BenchmarkConfig.DatabaseConfig,
-			RateControlConfig: exampleBench.BenchmarkConfig.RateControlConfig,
-			WorkloadScale:     0.5,
-		}),
+		WorkloadConfig: mybench.WorkloadConfig{
+			Name:          "InsertSimpleTable",
+			WorkloadScale: 0.5,
+		},
 
 		table: table,
 	}
 
-	workload, err := mybench.NewWorkload[mybench.NoContextData](workloadInterface)
-	if err != nil {
-		panic(err)
-	}
-
-	return workload
+	return mybench.NewWorkload[mybench.NoContextData](workloadInterface)
 }
 
 func (r *InsertSimpleTable) Event(ctx mybench.WorkerContext[mybench.NoContextData]) error {
@@ -46,24 +39,17 @@ type UpdateSimpleTable struct {
 	table mybench.Table
 }
 
-func NewUpdateSimpleTable(exampleBench ExampleBench, table mybench.Table) mybench.AbstractWorkload {
+func NewUpdateSimpleTable(table mybench.Table) mybench.AbstractWorkload {
 	workloadInterface := &UpdateSimpleTable{
-		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
-			Name:              "UpdateSimpleTable",
-			DatabaseConfig:    exampleBench.BenchmarkConfig.DatabaseConfig,
-			RateControlConfig: exampleBench.BenchmarkConfig.RateControlConfig,
-			WorkloadScale:     0.5,
-		}),
+		WorkloadConfig: mybench.WorkloadConfig{
+			Name:          "UpdateSimpleTable",
+			WorkloadScale: 0.5,
+		},
 
 		table: table,
 	}
 
-	workload, err := mybench.NewWorkload[mybench.NoContextData](workloadInterface)
-	if err != nil {
-		panic(err)
-	}
-
-	return workload
+	return mybench.NewWorkload[mybench.NoContextData](workloadInterface)
 }
 
 func (r *UpdateSimpleTable) Event(ctx mybench.WorkerContext[mybench.NoContextData]) error {

@@ -56,8 +56,8 @@ func (b ExampleBench) Workloads() ([]mybench.AbstractWorkload, error) {
 	table := NewSimpleTable(idGen)
 
 	return []mybench.AbstractWorkload{
-		NewInsertSimpleTable(b, table),
-		NewUpdateSimpleTable(b, table),
+		NewInsertSimpleTable(table),
+		NewUpdateSimpleTable(table),
 	}, nil
 }
 

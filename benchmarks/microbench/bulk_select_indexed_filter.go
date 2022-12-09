@@ -12,24 +12,17 @@ type BulkSelectIndexedFilter struct {
 	filterField string
 }
 
-func NewBulkSelectIndexedFilter(config *mybench.BenchmarkConfig, table *mybench.Table, rateScale float64, filterField string) mybench.AbstractWorkload {
+func NewBulkSelectIndexedFilter(table *mybench.Table, rateScale float64, filterField string) mybench.AbstractWorkload {
 	workloadInterface := &BulkSelectIndexedFilter{
-		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
-			Name:              "BulkSelectIndexedFilter_" + filterField,
-			DatabaseConfig:    config.DatabaseConfig,
-			RateControlConfig: config.RateControlConfig,
-			WorkloadScale:     rateScale,
-		}),
+		WorkloadConfig: mybench.WorkloadConfig{
+			Name:          "BulkSelectIndexedFilter_" + filterField,
+			WorkloadScale: rateScale,
+		},
 		table:       table,
 		filterField: filterField,
 	}
 
-	workload, err := mybench.NewWorkload[MicroBenchContextData](workloadInterface)
-	if err != nil {
-		panic(err)
-	}
-
-	return workload
+	return mybench.NewWorkload[MicroBenchContextData](workloadInterface)
 }
 
 func (c *BulkSelectIndexedFilter) Event(ctx mybench.WorkerContext[MicroBenchContextData]) error {

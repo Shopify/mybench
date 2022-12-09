@@ -2,7 +2,6 @@ package mybench
 
 import (
 	"context"
-	"math"
 	"sync"
 	"time"
 
@@ -46,15 +45,9 @@ type WorkloadConfig struct {
 	// The name of the workload, for identification purposes only.
 	Name string
 
-	// The database config used to create connection objects.
-	DatabaseConfig DatabaseConfig
-
 	// scales the workload by the given percentage
 	// this currently scales various RateControl parameters
 	WorkloadScale float64
-
-	// Controls the event rate
-	RateControlConfig RateControlConfig
 
 	// Configures the visualization for this workload.
 	// Some workload may know the latency bounds, and may wish to choose a better scale for the histograms
@@ -63,61 +56,6 @@ type WorkloadConfig struct {
 
 func (w WorkloadConfig) Config() WorkloadConfig {
 	return w
-}
-
-func NewWorkloadConfigWithDefaults(c WorkloadConfig) WorkloadConfig {
-	if c.Name == "" {
-		panic("must specify workload Name")
-	}
-
-	if c.DatabaseConfig.ConnectionMultiplier < 0 {
-		panic("must specify positive ConnectionMultiplier")
-	}
-
-	// Apply RateControlConfig defaults as needed
-	if c.RateControlConfig.EventRate == 0 {
-		c.RateControlConfig.EventRate = 1000
-	}
-	if c.RateControlConfig.MaxEventRatePerWorker == 0 {
-		c.RateControlConfig.MaxEventRatePerWorker = 100
-	}
-	if c.RateControlConfig.OuterLoopRate == 0 {
-		c.RateControlConfig.OuterLoopRate = 50
-	}
-
-	// If Concurrency is not specified, calculate it from EventRate and MaxEventRatePerWorker
-	if c.RateControlConfig.Concurrency == 0 {
-		if c.DatabaseConfig.ConnectionMultiplier > 1 {
-			panic("if ConnectionMultiplier is specified, Concurrency must be specified")
-		}
-		c.RateControlConfig.Concurrency = int(math.Ceil(c.RateControlConfig.EventRate / float64(c.RateControlConfig.MaxEventRatePerWorker)))
-	}
-	if c.RateControlConfig.Concurrency > int(c.RateControlConfig.EventRate) {
-		c.RateControlConfig.Concurrency = int(c.RateControlConfig.EventRate)
-		logrus.Warnf("Concurrency is too high for the given EventRate. Reducing Concurrency to %d", c.RateControlConfig.Concurrency)
-	}
-
-	// Apply the workload scale to EventRate and Concurrency
-	if c.WorkloadScale < 0 || c.WorkloadScale > 1 {
-		panic("WorkloadScale (if specified) must be between 0 and 1")
-	} else if c.WorkloadScale == 0 { // if not specified, default to 1
-		c.WorkloadScale = 1
-	}
-	c.RateControlConfig.EventRate = c.RateControlConfig.EventRate * c.WorkloadScale
-	c.RateControlConfig.Concurrency = int(math.Ceil(float64(c.RateControlConfig.Concurrency) * c.WorkloadScale))
-
-	// Apply Visualization defaults as needed
-	if c.Visualization.LatencyHistMin == 0 {
-		c.Visualization.LatencyHistMin = 0
-	}
-	if c.Visualization.LatencyHistMax == 0 {
-		c.Visualization.LatencyHistMax = 50000
-	}
-	if c.Visualization.LatencyHistSize == 0 {
-		c.Visualization.LatencyHistSize = 1000
-	}
-
-	return c
 }
 
 // An interface for implementing the workload. Although only one Workload struct
@@ -196,6 +134,9 @@ type Workload[ContextDataT any] struct {
 
 	workersWg *sync.WaitGroup
 	logger    logrus.FieldLogger
+
+	databaseConfig    DatabaseConfig
+	rateControlConfig RateControlConfig
 }
 
 // We want the workload to be templated so the context data can be transparently
@@ -213,6 +154,11 @@ type AbstractWorkload interface {
 	Run(context.Context, time.Time)
 	Config() WorkloadConfig
 
+	// We need to set the RateControlConfig on the Workload object, because the
+	// data logger needs to know the concurrency/event rate of the workload.
+	// See comments in Benchmark.Start for more details.
+	FinishInitialization(DatabaseConfig, RateControlConfig)
+
 	// The DataLogger need to iterate through all the OnlineHistograms for each
 	// worker so it can perform the double buffer swap. Since the DataLogger only
 	// have access to a map of AbstractWorkload, it doesn't have access to the
@@ -228,36 +174,68 @@ type AbstractWorkload interface {
 	// TODO: check that the functional pattern doesn't introduce unnecessary
 	// overhead/memory allocations.
 	ForEachOnlineHistogram(func(int, *OnlineHistogram))
+
+	// The DataLogger needs the rate control config to make allocations and record
+	// desired event rates. See comments in Benchmark.Start for more details.
+	RateControlConfig() RateControlConfig
 }
 
-func NewWorkload[ContextDataT any](workloadIface WorkloadInterface[ContextDataT]) (*Workload[ContextDataT], error) {
+func NewWorkload[ContextDataT any](workloadIface WorkloadInterface[ContextDataT]) *Workload[ContextDataT] {
 	c := workloadIface.Config()
-	workload := &Workload[ContextDataT]{
+	if c.Name == "" {
+		panic("must specify workload name")
+	}
+
+	if c.WorkloadScale < 0 || c.WorkloadScale > 1 {
+		panic("WorkloadScale must be between 0 and 1")
+	} else if c.WorkloadScale == 0 { // if not specified, default to 1
+		c.WorkloadScale = 1
+	}
+
+	// Apply Visualization defaults as needed
+	if c.Visualization.LatencyHistMin == 0 {
+		c.Visualization.LatencyHistMin = 0
+	}
+	if c.Visualization.LatencyHistMax == 0 {
+		c.Visualization.LatencyHistMax = 50000
+	}
+	if c.Visualization.LatencyHistSize == 0 {
+		c.Visualization.LatencyHistSize = 1000
+	}
+
+	return &Workload[ContextDataT]{
 		WorkloadConfig: c,
 		workloadIface:  workloadIface,
 		workersWg:      &sync.WaitGroup{},
 		logger:         logrus.WithField("workload", c.Name),
 	}
+}
 
-	var err error
-	workload.workers = make([]*BenchmarkWorker[ContextDataT], workload.RateControlConfig.Concurrency)
-	for i := 0; i < workload.RateControlConfig.Concurrency; i++ {
-		workload.workers[i], err = NewBenchmarkWorker(workloadIface)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return workload, nil
+func (w *Workload[ContextDataT]) FinishInitialization(databaseConfig DatabaseConfig, rateControlConfig RateControlConfig) {
+	w.databaseConfig = databaseConfig
+	w.rateControlConfig = rateControlConfig
 }
 
 func (w *Workload[ContextDataT]) Run(ctx context.Context, startTime time.Time) {
-	w.workersWg.Add(w.RateControlConfig.Concurrency)
-	w.logger.WithFields(logrus.Fields{"concurrency": w.RateControlConfig.Concurrency, "rate": w.RateControlConfig.EventRate}).Info("starting benchmark workers")
-	for i := 0; i < w.RateControlConfig.Concurrency; i++ {
+	var err error
+	w.workers = make([]*BenchmarkWorker[ContextDataT], w.rateControlConfig.Concurrency)
+	for i := 0; i < w.rateControlConfig.Concurrency; i++ {
+		w.workers[i], err = NewBenchmarkWorker(w.workloadIface, w.databaseConfig, w.rateControlConfig)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	w.workersWg.Add(w.rateControlConfig.Concurrency)
+	w.logger.WithFields(logrus.Fields{
+		"concurrency": w.rateControlConfig.Concurrency,
+		"rate":        w.rateControlConfig.EventRate,
+	}).Info("starting benchmark workers")
+
+	for i := 0; i < w.rateControlConfig.Concurrency; i++ {
 		go func(worker *BenchmarkWorker[ContextDataT]) {
 			defer w.workersWg.Done()
-			err := worker.Run(ctx, startTime)
+			err := worker.Run(ctx, startTime, w.databaseConfig, w.rateControlConfig)
 			if err != nil {
 				w.logger.WithError(err).Panic("failed to run worker")
 			}
@@ -269,6 +247,10 @@ func (w *Workload[ContextDataT]) Run(ctx context.Context, startTime time.Time) {
 
 func (w *Workload[ContextDataT]) Config() WorkloadConfig {
 	return w.WorkloadConfig
+}
+
+func (w *Workload[ContextDataT]) RateControlConfig() RateControlConfig {
+	return w.rateControlConfig
 }
 
 func (w *Workload[ContextDataT]) ForEachOnlineHistogram(f func(int, *OnlineHistogram)) {

@@ -3,6 +3,7 @@ package mybench
 import (
 	"errors"
 	"flag"
+	"math"
 	"os"
 	"os/signal"
 	"syscall"
@@ -53,11 +54,11 @@ func NewBenchmarkConfig() *BenchmarkConfig {
 	return config
 }
 
-func (c BenchmarkConfig) Config() BenchmarkConfig {
-	return c
+func (c *BenchmarkConfig) Config() BenchmarkConfig {
+	return *c
 }
 
-func (c BenchmarkConfig) Validate() error {
+func (c *BenchmarkConfig) ValidateAndSetDefaults() error {
 	if c.Bench == c.Load {
 		return errors.New("must only specify one of -bench or -load")
 	}
@@ -72,6 +73,33 @@ func (c BenchmarkConfig) Validate() error {
 
 	if c.DatabaseConfig.ConnectionMultiplier != 1 && c.RateControlConfig.Concurrency == 0 {
 		return errors.New("must specify -concurrency if -connectionmultiplier is specified")
+	}
+
+	// Apply RateControlConfig defaults as needed
+	if c.RateControlConfig.EventRate == 0 {
+		c.RateControlConfig.EventRate = 1000
+	}
+
+	if c.RateControlConfig.MaxEventRatePerWorker == 0 {
+		c.RateControlConfig.MaxEventRatePerWorker = 100
+	}
+
+	if c.RateControlConfig.OuterLoopRate == 0 {
+		c.RateControlConfig.OuterLoopRate = 50
+	}
+
+	// If Concurrency is not specified, calculate it from EventRate and MaxEventRatePerWorker
+	if c.RateControlConfig.Concurrency == 0 {
+		if c.DatabaseConfig.ConnectionMultiplier > 1 {
+			return errors.New("if ConnectionMultiplier is specified, Concurrency must be specified")
+		}
+
+		c.RateControlConfig.Concurrency = int(math.Ceil(c.RateControlConfig.EventRate / float64(c.RateControlConfig.MaxEventRatePerWorker)))
+	}
+
+	if c.RateControlConfig.Concurrency > int(c.RateControlConfig.EventRate) {
+		c.RateControlConfig.Concurrency = int(c.RateControlConfig.EventRate)
+		logrus.Warnf("Concurrency is too high for the given EventRate. Reducing Concurrency to %d", c.RateControlConfig.Concurrency)
 	}
 
 	return nil
@@ -104,7 +132,7 @@ type BenchmarkInterface interface {
 // Runs a custom defined benchmark that implements the BenchmarkInterface.
 func Run(benchmarkInterface BenchmarkInterface) error {
 	config := benchmarkInterface.Config()
-	err := config.Validate()
+	err := config.ValidateAndSetDefaults()
 	if err != nil {
 		return err
 	}
@@ -124,13 +152,7 @@ func Run(benchmarkInterface BenchmarkInterface) error {
 	}
 
 	// Construct and run the benchmark
-	benchmark, err := NewBenchmark(
-		benchmarkInterface.Name(),
-		config.LogFile,
-		config.LogTable,
-		config.Note,
-		config.HttpPort,
-	)
+	benchmark, err := NewBenchmark(benchmarkInterface.Name(), config)
 	if err != nil {
 		return err
 	}

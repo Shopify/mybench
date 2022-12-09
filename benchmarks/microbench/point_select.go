@@ -15,24 +15,17 @@ type PointSelect struct {
 	batchSize int
 }
 
-func NewPointSelect(config *mybench.BenchmarkConfig, table *mybench.Table, rateScale float64, batchSize int) mybench.AbstractWorkload {
+func NewPointSelect(table *mybench.Table, rateScale float64, batchSize int) mybench.AbstractWorkload {
 	workloadInterface := &PointSelect{
-		WorkloadConfig: mybench.NewWorkloadConfigWithDefaults(mybench.WorkloadConfig{
-			Name:              "PointSelect_" + strconv.Itoa(batchSize),
-			DatabaseConfig:    config.DatabaseConfig,
-			RateControlConfig: config.RateControlConfig,
-			WorkloadScale:     rateScale,
-		}),
+		WorkloadConfig: mybench.WorkloadConfig{
+			Name:          "PointSelect_" + strconv.Itoa(batchSize),
+			WorkloadScale: rateScale,
+		},
 		table:     table,
 		batchSize: batchSize,
 	}
 
-	workload, err := mybench.NewWorkload[MicroBenchContextData](workloadInterface)
-	if err != nil {
-		panic(err)
-	}
-
-	return workload
+	return mybench.NewWorkload[MicroBenchContextData](workloadInterface)
 }
 
 func (c *PointSelect) Event(ctx mybench.WorkerContext[MicroBenchContextData]) error {
