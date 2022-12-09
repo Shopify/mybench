@@ -183,6 +183,10 @@ func (t Table) InsertQueryList(r *Rand, valueOverrides []map[string]interface{})
 }
 
 func (t Table) ReloadData(databaseConfig DatabaseConfig, totalrows int64, batchSize int64, concurrency int) {
+	if concurrency <= 0 { // apply default if no valid concurrency is given
+		concurrency = 16
+	}
+
 	logger := logrus.WithFields(logrus.Fields{
 		"table":     t.Name,
 		"totalrows": totalrows,
