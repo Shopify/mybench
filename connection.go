@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/go-mysql-org/go-mysql/client"
-	"github.com/go-mysql-org/go-mysql/mysql"
 )
 
 // The database config object that can be turned into a single connection
@@ -27,9 +26,15 @@ type DatabaseConfig struct {
 	// each successive request. The sole purpose of this feature is to multiply the
 	// number of open connections to the database to assess any performance impact
 	// specific to the overall number of open database connections.
+	//
+	// Note: this feature does not work on all benchmarks at this moment. It only
+	// works with benchmarks that uses the mybench.Connection.GetRoundRobinConnection
+	// function to get their connections and execute queries.
 	ConnectionMultiplier int
 }
+
 type Connection struct {
+	*client.Conn
 	connList  []*client.Conn
 	connIndex int
 }
@@ -64,13 +69,15 @@ func (c DatabaseConfig) Connection() (*Connection, error) {
 		}
 		connList[i] = conn
 	}
+
 	return &Connection{
+		Conn:      connList[0],
 		connList:  connList,
 		connIndex: 0,
 	}, nil
 }
 
-func (c *Connection) GetConn() *client.Conn {
+func (c *Connection) GetRoundRobinConnection() *client.Conn {
 	c.connIndex = (c.connIndex + 1) % len(c.connList)
 	return c.connList[c.connIndex]
 }
@@ -84,12 +91,4 @@ func (c *Connection) Close() error {
 		}
 	}
 	return nil
-}
-
-func (c *Connection) Execute(query string, args ...interface{}) (*mysql.Result, error) {
-	return c.GetConn().Execute(query, args...)
-}
-
-func (c *Connection) Prepare(query string) (*client.Stmt, error) {
-	return c.GetConn().Prepare(query)
 }
