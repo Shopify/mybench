@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Tutorial: Writing a custom benchmark &#8212; mybench  documentation</title>
+    <title>Tutorial: Writing and running a custom benchmark &#8212; mybench  documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -15,6 +15,7 @@
     <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/sphinx_highlight.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Detailed design documentation" href="detailed-design-doc.html" />
@@ -35,9 +36,703 @@
 
           <div class="body" role="main">
             
-  <section id="tutorial-writing-a-custom-benchmark">
-<span id="writing-a-benchmark"></span><h1>Tutorial: Writing a custom benchmark<a class="headerlink" href="#tutorial-writing-a-custom-benchmark" title="Permalink to this heading">¶</a></h1>
-<p>TODO</p>
+  <section id="tutorial-writing-and-running-a-custom-benchmark">
+<span id="writing-a-benchmark"></span><h1>Tutorial: Writing and running a custom benchmark<a class="headerlink" href="#tutorial-writing-and-running-a-custom-benchmark" title="Permalink to this heading">¶</a></h1>
+<p>Writing a custom benchmark for mybench requires implementing at least two
+interfaces, <code class="docutils literal notranslate"><span class="pre">mybench.WorkloadInterface</span></code> and <code class="docutils literal notranslate"><span class="pre">mybench.BenchmarkInterface</span></code>.
+As noted in the <a class="reference external" href="detailed-design-doc.html">architecture doc</a>, a <code class="docutils literal notranslate"><span class="pre">Benchmark</span></code>
+contains multiple <code class="docutils literal notranslate"><span class="pre">Workload</span></code>s, where each <code class="docutils literal notranslate"><span class="pre">Workload</span></code> implements an
+<code class="docutils literal notranslate"><span class="pre">Event()</span></code> function. An example <code class="docutils literal notranslate"><span class="pre">Workload</span></code> could be one that issues a
+particular sequence of queries for one web request, while a different
+<code class="docutils literal notranslate"><span class="pre">Workload</span></code> could issue a different sequence of queries for a different web
+request.</p>
+<p>To create a benchmark, it is important to model the workload first. A model of
+the system is a simplified version of the production system that still contains
+most of the fundamental behaviors of the production system. Creating a suitable
+model that matches up with production requires careful examination of the
+traffic and query patterns of the system, as well as the system setup itself
+(such as CPU, memory, disk, and other “physical” constraints). It also requires
+validation of the model with the production workload by comparing and
+explaining the similarities and differences of the throughput and latency
+results obtained in both benchmark and in production. Model creation and
+validation is outside the scope of this document. Instead, this tutorial aims
+to teach you how to implement a model in mybench via a simple example.</p>
+<section id="modeling-the-workload">
+<h2>Modeling the workload<a class="headerlink" href="#modeling-the-workload" title="Permalink to this heading">¶</a></h2>
+<p>The simple example we implement is of a simple microblogging service called
+Chirp where users can read and write on a single table called <code class="docutils literal notranslate"><span class="pre">chirps</span></code>.
+Before writing the code, we start by documenting the table definition and the
+workloads.</p>
+<section id="table-definition">
+<h3>Table definition<a class="headerlink" href="#table-definition" title="Permalink to this heading">¶</a></h3>
+<p>The service is a simplified model and thus does not have the concept of users.
+We only have a single table with the following columns:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column name</p></th>
+<th class="head"><p>Column type</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BIGINT(20)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">content</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR(140)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">created_at</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DATETIME</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>This table also has the following indices:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">PRIMARY</span> <span class="pre">KEY</span> <span class="pre">(id)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">KEY</span> <span class="pre">(created_at)</span></code></p></li>
+</ul>
+</section>
+<section id="workload-definition">
+<h3>Workload definition<a class="headerlink" href="#workload-definition" title="Permalink to this heading">¶</a></h3>
+<p>There are three workloads that query the <code class="docutils literal notranslate"><span class="pre">chirps</span></code> table:</p>
+<p>One workload consists of reading the 200 of the latest chirps via the following
+query, which consists of 75% of the traffic:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">chirps</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">200</span><span class="w"></span>
+</pre></div>
+</div>
+<p>A second workload consists of reading a single chirp based on its <code class="docutils literal notranslate"><span class="pre">id</span></code>, which
+consists of 20% of the traffic:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">chirps</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">?</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The third workload consists of the creation of a new chirp with the following
+query, which consists of 5% of the traffic:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">chirps</span><span class="w"> </span><span class="n">VALUE</span><span class="w"> </span><span class="p">(</span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="o">?</span><span class="p">,</span><span class="w"> </span><span class="n">NOW</span><span class="p">())</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The length of the data in the <code class="docutils literal notranslate"><span class="pre">content</span></code> field for each row in the <code class="docutils literal notranslate"><span class="pre">chirps</span></code>
+table will be generated following a predefined histogram distribution. This is
+discussed further later, in <a class="reference internal" href="#defining-the-table-and-data-generators">Defining the table and data generators</a>.</p>
+</section>
+<section id="initial-data">
+<h3>Initial data<a class="headerlink" href="#initial-data" title="Permalink to this heading">¶</a></h3>
+<p>Since Chirp is a web-scale microblogging platform, we assume that we already
+have 10 million chirps in the database.</p>
+</section>
+</section>
+<section id="creating-a-project-structure">
+<h2>Creating a project structure<a class="headerlink" href="#creating-a-project-structure" title="Permalink to this heading">¶</a></h2>
+<p>Note: all code for this tutorial can be found <a class="reference external" href="https://github.com/Shopify/mybench/tree/main/benchmarks/tutorialbench">here</a>.</p>
+<p>Mybench is designed to be used as a library. The first step to creating a
+benchmark involves importing mybench via <cite>go mod</cite>:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>mkdir tutorialbench <span class="o">&amp;&amp;</span> <span class="nb">cd</span> tutorialbench
+<span class="gp">$ </span>go mod init example.com/tutorialbench
+<span class="gp">$ </span>go get github.com/Shopify/mybench
+</pre></div>
+</div>
+<p>For this project, let’s create four files:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">main.go</span></code>: this starts the command line program that corresponds to the
+benchmark.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">table_chirps.go</span></code>: this contains the definition of the <code class="docutils literal notranslate"><span class="pre">chirps</span></code> table and
+the data generator for each column via <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#Table"><code class="docutils literal notranslate"><span class="pre">mybench.Table</span></code></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">workload_read_latest_chirps.go</span></code>: this contains the definition of the
+struct that implements <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#WorkloadInterface"><code class="docutils literal notranslate"><span class="pre">mybench.WorkloadInterface</span></code></a> for the workload that
+reads the latest chirps.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">workload_read_single_chirp.go</span></code>: same as above but for reading a single
+chirp.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">workload_insert_chirp.go</span></code>: same as above but for inserting a chirp.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">benchmark.go</span></code>: this contains the definition of the struct that implements
+<a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#BenchmarkInterface"><code class="docutils literal notranslate"><span class="pre">mybench.BenchmarkInterface</span></code></a>.</p></li>
+</ul>
+<p>It is not necessary to split the benchmark into multiple files. This tutorial
+splits these files so they are more easily embedded in this document.</p>
+</section>
+<section id="defining-the-table-and-data-generators">
+<h2>Defining the table and data generators<a class="headerlink" href="#defining-the-table-and-data-generators" title="Permalink to this heading">¶</a></h2>
+<p>Before running the benchmark, we need to first generate the initial data for
+the table. To do this, we can create an instance of <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#Table"><code class="docutils literal notranslate"><span class="pre">mybench.Table</span></code></a> in
+<code class="docutils literal notranslate"><span class="pre">table_chirps.go</span></code>:</p>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w"></span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">  </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span><span class="w"></span>
+<span class="p">)</span><span class="w"></span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">NewTableChirps</span><span class="p">(</span><span class="nx">idGen</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">DataGenerator</span><span class="p">)</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">InitializeTable</span><span class="p">(</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;chirps&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="nx">Columns</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="o">*</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Column</span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;id&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="nx">Definition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;BIGINT(20) NOT NULL AUTO_INCREMENT&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="nx">Generator</span><span class="p">:</span><span class="w">  </span><span class="nx">idGen</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="p">},</span><span class="w"></span>
+<span class="w">      </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;content&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="nx">Definition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;VARCHAR(140)&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="nx">Generator</span><span class="p">:</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewHistogramLengthStringGenerator</span><span class="p">(</span><span class="w"></span>
+<span class="w">          </span><span class="p">[]</span><span class="kt">float64</span><span class="p">{</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span><span class="w"> </span><span class="mf">20.5</span><span class="p">,</span><span class="w"> </span><span class="mf">40.5</span><span class="p">,</span><span class="w"> </span><span class="mf">60.5</span><span class="p">,</span><span class="w"> </span><span class="mf">80.5</span><span class="p">,</span><span class="w"> </span><span class="mf">100.5</span><span class="p">,</span><span class="w"> </span><span class="mf">120.5</span><span class="p">,</span><span class="w"> </span><span class="mf">140.5</span><span class="p">},</span><span class="w"></span>
+<span class="w">          </span><span class="p">[]</span><span class="kt">float64</span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="c1">// [0, 20)</span><span class="w"></span>
+<span class="w">            </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="c1">// [20, 40)</span><span class="w"></span>
+<span class="w">            </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="c1">// [40, 60)</span><span class="w"></span>
+<span class="w">            </span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="c1">// [60, 80)</span><span class="w"></span>
+<span class="w">            </span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="c1">// [80, 100)</span><span class="w"></span>
+<span class="w">            </span><span class="mi">25</span><span class="p">,</span><span class="w"> </span><span class="c1">// [100, 120)</span><span class="w"></span>
+<span class="w">            </span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="c1">// [120, 140)</span><span class="w"></span>
+<span class="w">          </span><span class="p">},</span><span class="w"></span>
+<span class="w">        </span><span class="p">),</span><span class="w"></span>
+<span class="w">      </span><span class="p">},</span><span class="w"></span>
+<span class="w">      </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;created_at&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="nx">Definition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;DATETIME&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="nx">Generator</span><span class="p">:</span><span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewNowGenerator</span><span class="p">(),</span><span class="w"></span>
+<span class="w">      </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="nx">Indices</span><span class="p">:</span><span class="w"> </span><span class="p">[][]</span><span class="kt">string</span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="p">{</span><span class="s">&quot;created_at&quot;</span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="nx">PrimaryKey</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;id&quot;</span><span class="p">},</span><span class="w"></span>
+<span class="w">  </span><span class="p">})</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">mybench.Table</span></code> contains the definition for each column via the <code class="docutils literal notranslate"><span class="pre">Name</span></code> and
+<code class="docutils literal notranslate"><span class="pre">Definition</span></code> fields on the <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#Column"><code class="docutils literal notranslate"><span class="pre">mybench.Column</span></code></a> type. The <code class="docutils literal notranslate"><span class="pre">Generator</span></code> field is
+the data generator for that column. The <code class="docutils literal notranslate"><span class="pre">mybench.Table</span></code> object is created via
+the <code class="docutils literal notranslate"><span class="pre">NewTableChirps</span></code> function, which is called during both the <code class="docutils literal notranslate"><span class="pre">-load</span></code> and
+<code class="docutils literal notranslate"><span class="pre">-bench</span></code> phases of mybench. During <code class="docutils literal notranslate"><span class="pre">-load</span></code>, the <code class="docutils literal notranslate"><span class="pre">mybench.Table</span></code> object is
+used to create the table and load the initial data (see
+<a class="reference internal" href="#implementing-benchmarkinterface"><span class="std std-ref">Implementing BenchmarkInterface</span></a>). In the <code class="docutils literal notranslate"><span class="pre">-bench</span></code> phase, the workload
+is executed. During these two phases, the data generators may need to generate
+different values. Mybench generators can be used to generate values for both
+<code class="docutils literal notranslate"><span class="pre">INSERT</span></code> queries, which require “new” random values, and <code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">...</span> <span class="pre">WHERE</span>
+<span class="pre">column</span> <span class="pre">=</span> <span class="pre">?</span></code> queries, which require “existing” values that are present in the
+database. The generation of “new” and “existing” values are done via the
+<code class="docutils literal notranslate"><span class="pre">Generator.Generate()</span></code> and <code class="docutils literal notranslate"><span class="pre">Generator.SampleFromExisting()</span></code> functions,
+respectively.</p>
+<p>The generator for the <code class="docutils literal notranslate"><span class="pre">id</span></code> column is not defined in this function but is
+instead passed in as function arguments. This is because the behaviour of this
+data generator should different between the <code class="docutils literal notranslate"><span class="pre">-load</span></code> and <code class="docutils literal notranslate"><span class="pre">-bench</span></code> phases.
+During <code class="docutils literal notranslate"><span class="pre">-load</span></code>, the data generator needs to generate unique <code class="docutils literal notranslate"><span class="pre">id</span></code> values to
+be inserted into the database. During <code class="docutils literal notranslate"><span class="pre">-bench</span></code>, the data generators needs to
+sample <code class="docutils literal notranslate"><span class="pre">id</span></code> values that likely exist in the database. By passing a different
+<code class="docutils literal notranslate"><span class="pre">id</span></code> generator during each of these phases, the desired behaviours can be
+achieved.</p>
+<p>For the <code class="docutils literal notranslate"><span class="pre">content</span></code> column, we define a histogram generator that generates
+random strings according to a <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#HistogramDistribution">histogram distribution</a> with two parameters:
+the first array is the <code class="docutils literal notranslate"><span class="pre">binsEndPoints</span></code>, which specifies the endpoints of each
+bin. Since the lengths generated are supposed to be integers, the endpoints are
++/- 0.5 from the integer values. The second array is the <code class="docutils literal notranslate"><span class="pre">frequency</span></code>, which
+specifies the relative frequency of each bin. In this case, the sum of
+<code class="docutils literal notranslate"><span class="pre">frequency</span></code> is 100. It does not have to be the case as the generator
+normalizes the frequency internally. In this example, 25% of the string length
+will be between 100 and 119 characters. The distribution of character lengths
+between 100 and 119 is uniform. Since none of our workload queries implement a
+filter on the <code class="docutils literal notranslate"><span class="pre">content</span></code> column, we don’t need to be worried about the
+behaviour of the generator when generating values for the <code class="docutils literal notranslate"><span class="pre">WHERE</span></code> clause.</p>
+<p>For the <code class="docutils literal notranslate"><span class="pre">created_at</span></code> column, we define a <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#NewNowGenerator">now generator</a> which generates
+<code class="docutils literal notranslate"><span class="pre">time.Now()</span></code> for insertion. None of our workloads query with this column so
+we don’t need to be concerned about the behavior for generating values for
+<code class="docutils literal notranslate"><span class="pre">WHERE</span></code> clauses.</p>
+<p>Since our modeled table has an index on <code class="docutils literal notranslate"><span class="pre">created_at</span></code>, we have to specify it
+in the <code class="docutils literal notranslate"><span class="pre">Indices</span></code> attribute. The primary key of the table is <code class="docutils literal notranslate"><span class="pre">id</span></code>, so we
+specify it into the <code class="docutils literal notranslate"><span class="pre">PrimaryKey</span></code> attribute.</p>
+</section>
+<section id="implementing-workloadinterface">
+<h2>Implementing <code class="docutils literal notranslate"><span class="pre">WorkloadInterface</span></code><a class="headerlink" href="#implementing-workloadinterface" title="Permalink to this heading">¶</a></h2>
+<p>To implement the read and write workloads, we need to create a struct that
+implements <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#WorkloadInterface"><code class="docutils literal notranslate"><span class="pre">mybench.WorkloadInterface</span></code></a>. This interface requires three methods
+to be implemented:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Event()</span></code>: this is the benchmark code to be called with the event rates
+specified in the command line (via the <code class="docutils literal notranslate"><span class="pre">-eventrate</span></code> flag). The function
+will be called by multiple workers (and thus goroutines) and must be
+thread-safe.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Config()</span></code>: this returns a <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#WorkloadConfig"><code class="docutils literal notranslate"><span class="pre">mybench.WorkloadConfig</span></code></a> which configures
+parameters such as the percentage events allocated to this workload (via
+<code class="docutils literal notranslate"><span class="pre">WorkloadScale</span></code>), the database config (via <code class="docutils literal notranslate"><span class="pre">DatabaseConfig</span></code>), the name of
+the workload (via <code class="docutils literal notranslate"><span class="pre">Name</span></code>), and more.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">NewContextData()</span></code>: this returns a new context data object of an arbitrary
+type. One context data object is created per benchmark worker and the object
+is passed to the <code class="docutils literal notranslate"><span class="pre">Event</span></code> function. The context data is supposed to be a
+variable that stores thread-local data. We will see how this can be used in
+<a class="reference internal" href="#readsinglechirp">ReadSingleChirp</a>.</p></li>
+</ul>
+<section id="readlatestchirps">
+<h3><code class="docutils literal notranslate"><span class="pre">ReadLatestChirps</span></code><a class="headerlink" href="#readlatestchirps" title="Permalink to this heading">¶</a></h3>
+<p>The first workload we will define is a simple workload that reads the latest
+200 chirps, which consists of 75% of the traffic. This is defined in the
+<code class="docutils literal notranslate"><span class="pre">workload_read_latest_chirps.go</span></code> file:</p>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w"></span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">  </span><span class="s">&quot;fmt&quot;</span><span class="w"></span>
+
+<span class="w">  </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span><span class="w"></span>
+<span class="p">)</span><span class="w"></span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">ReadLatestChirps</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span><span class="w"></span>
+<span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span><span class="w"></span>
+<span class="w">  </span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="o">*</span><span class="nx">ReadLatestChirps</span><span class="p">)</span><span class="w"> </span><span class="nx">Event</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkerContext</span><span class="p">[</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span><span class="p">])</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="nx">query</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;SELECT * FROM %s ORDER BY created_at DESC LIMIT 200&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Conn</span><span class="p">.</span><span class="nx">Execute</span><span class="p">(</span><span class="nx">query</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">err</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">NewReadLatestChirps</span><span class="p">(</span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="p">)</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">AbstractWorkload</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="nx">workloadInterface</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">ReadLatestChirps</span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="nx">WorkloadConfig</span><span class="p">:</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="nx">Name</span><span class="p">:</span><span class="w">          </span><span class="s">&quot;ReadLatestChirps&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="nx">WorkloadScale</span><span class="p">:</span><span class="w"> </span><span class="mf">0.75</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="nx">table</span><span class="p">:</span><span class="w"> </span><span class="nx">table</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewWorkload</span><span class="p">[</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span><span class="p">](</span><span class="nx">workloadInterface</span><span class="p">)</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Note that we only defined the <code class="docutils literal notranslate"><span class="pre">Event</span></code> function. This is because <code class="docutils literal notranslate"><span class="pre">Config</span></code> is
+defined by the embedded <code class="docutils literal notranslate"><span class="pre">WorkloadConfig</span></code> and <code class="docutils literal notranslate"><span class="pre">NewContextData</span></code> is defined by
+the embedded <code class="docutils literal notranslate"><span class="pre">NoContextData</span></code>. This is designed to make it easier to write
+workload code, as most workloads should hold and embed the <code class="docutils literal notranslate"><span class="pre">WorkloadConfig</span></code>
+and most workloads do not need any per-worker data storage (and thus should
+embed <code class="docutils literal notranslate"><span class="pre">NoContextData</span></code>).</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">Event</span></code> function of this workload takes a single <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#WorkerContext"><code class="docutils literal notranslate"><span class="pre">mybench.WorkerContext</span></code></a>
+argument named <code class="docutils literal notranslate"><span class="pre">ctx</span></code>. It has a field <code class="docutils literal notranslate"><span class="pre">Conn</span></code>, which is a
+<a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#Connection"><code class="docutils literal notranslate"><span class="pre">mybench.Connection</span></code></a> object. This is a thin-wrapper around the
+<a class="reference external" href="https://pkg.go.dev/github.com/go-mysql-org/go-mysql/client#Conn">go-mysql-org/go-mysql/client.Conn</a> for the
+time being. The reason this is passed into the <code class="docutils literal notranslate"><span class="pre">Event</span></code> function is because
+the <code class="docutils literal notranslate"><span class="pre">Event</span></code> function can be called concurrently from hundreds of workers,
+each running with its own goroutine, and connections are not thread safe. Thus,
+each worker has its own <code class="docutils literal notranslate"><span class="pre">mybench.Connection</span></code> object and these connections are
+passed to the <code class="docutils literal notranslate"><span class="pre">Event</span></code> function to ensure thread safety.</p>
+<p>Calling <code class="docutils literal notranslate"><span class="pre">ctx.Conn.Execute</span></code> executes the query against the database. If an
+error occurs, it is returned to mybench. For this workload, since there is only
+a single query.</p>
+<p>The workload is configured in the <code class="docutils literal notranslate"><span class="pre">NewReadLatestChirps</span></code> function that
+initializes the struct. The most important lines are the lines that defines the
+<code class="docutils literal notranslate"><span class="pre">Name</span></code> of the workload, which is used for statistics reporting; and the
+<code class="docutils literal notranslate"><span class="pre">WorkloadScale</span></code> of the workload, which is the percentage (as expressed by a
+number between 0 and 1) of the events that should be allocated to this workload.
+Since this workload is supposed to be 75% of the traffic, we set
+<code class="docutils literal notranslate"><span class="pre">WorkloadScale</span></code> to 0.75. Once the <code class="docutils literal notranslate"><span class="pre">WorkloadInterface</span></code> struct is created, we
+can create the workload object via <code class="docutils literal notranslate"><span class="pre">mybench.NewWorkload</span></code>, which is a generic
+function parameterized by the type of the context data, which in this case is
+<code class="docutils literal notranslate"><span class="pre">mybench.NoContextData</span></code>. The <code class="docutils literal notranslate"><span class="pre">NewReadLatestChirps</span></code> function will be called
+upon the initialization of the benchmark, which will be described in
+<a class="reference internal" href="#implementing-benchmarkinterface"><span class="std std-ref">Implementing BenchmarkInterface</span></a>.</p>
+</section>
+<section id="readsinglechirp">
+<h3><code class="docutils literal notranslate"><span class="pre">ReadSingleChirp</span></code><a class="headerlink" href="#readsinglechirp" title="Permalink to this heading">¶</a></h3>
+<p>The second workload we implement is the one where we randomly read a single
+chirp. For this exercise, we assume the query is always executed by a prepared
+statement. Since a prepared statement is associated with a connection, and each
+worker has its own connection object for thread safety, each worker must also
+hold its own prepared statement. The only way to do this is via a custom
+context data, which is initialized once per worker by mybench. This is all done
+with the <code class="docutils literal notranslate"><span class="pre">ReadSingleChirp</span></code> workload in the <code class="docutils literal notranslate"><span class="pre">workload_read_single_chirp.go</span></code>
+file:</p>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w"></span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">  </span><span class="s">&quot;fmt&quot;</span><span class="w"></span>
+
+<span class="w">  </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="s">&quot;github.com/go-mysql-org/go-mysql/client&quot;</span><span class="w"></span>
+<span class="p">)</span><span class="w"></span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">ReadSingleChirpContext</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="nx">stmt</span><span class="w"> </span><span class="o">*</span><span class="nx">client</span><span class="p">.</span><span class="nx">Stmt</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">ReadSingleChirp</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span><span class="w"></span>
+<span class="w">  </span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="o">*</span><span class="nx">ReadSingleChirp</span><span class="p">)</span><span class="w"> </span><span class="nx">Event</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkerContext</span><span class="p">[</span><span class="nx">ReadSingleChirpContext</span><span class="p">])</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="nx">id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">SampleFromExisting</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Data</span><span class="p">.</span><span class="nx">stmt</span><span class="p">.</span><span class="nx">Execute</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">err</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="o">*</span><span class="nx">ReadSingleChirp</span><span class="p">)</span><span class="w"> </span><span class="nx">NewContextData</span><span class="p">(</span><span class="nx">conn</span><span class="w"> </span><span class="o">*</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Connection</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="nx">ReadSingleChirpContext</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="kd">var</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="kt">error</span><span class="w"></span>
+<span class="w">  </span><span class="nx">ctx</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ReadSingleChirpContext</span><span class="p">{}</span><span class="w"></span>
+<span class="w">  </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">stmt</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">conn</span><span class="p">.</span><span class="nx">Prepare</span><span class="p">(</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;SELECT * FROM %s WHERE id = ?&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Name</span><span class="p">))</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">NewReadSingleChirp</span><span class="p">(</span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="p">)</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">AbstractWorkload</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="nx">workloadInterface</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">ReadSingleChirp</span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="nx">WorkloadConfig</span><span class="p">:</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="nx">Name</span><span class="p">:</span><span class="w">          </span><span class="s">&quot;ReadSingleChirp&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="nx">WorkloadScale</span><span class="p">:</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="nx">table</span><span class="p">:</span><span class="w"> </span><span class="nx">table</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewWorkload</span><span class="p">[</span><span class="nx">ReadSingleChirpContext</span><span class="p">](</span><span class="nx">workloadInterface</span><span class="p">)</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The custom context data for this workload is the struct
+<code class="docutils literal notranslate"><span class="pre">ReadSingleChirpContext</span></code>, which has a field holding a statement object
+(<code class="docutils literal notranslate"><span class="pre">*client.Stmt</span></code>). Each worker, on start, will call the <code class="docutils literal notranslate"><span class="pre">NewContextData</span></code>
+method to create the prepared statement and store it on a
+<code class="docutils literal notranslate"><span class="pre">ReadSingleChirpContext</span></code> object. The objects are then stored on the workers.
+When mybench calls <code class="docutils literal notranslate"><span class="pre">Event</span></code>, the <code class="docutils literal notranslate"><span class="pre">ReadSingleChirpContext</span></code> object is passed
+back to <code class="docutils literal notranslate"><span class="pre">Event</span></code> via the attribute <code class="docutils literal notranslate"><span class="pre">ctx.Data</span></code>. The statement object can then
+be accessed via <code class="docutils literal notranslate"><span class="pre">ctx.Data.stmt</span></code>. This is necessary because there is only a
+single <code class="docutils literal notranslate"><span class="pre">ReadSingleChirp</span></code> object globally and hundreds of benchmark workers
+could be all trying to call the <code class="docutils literal notranslate"><span class="pre">Event</span></code> function at the same time. To avoid
+data races, it is required to store states such as the <code class="docutils literal notranslate"><span class="pre">stmt</span></code> on context data
+objects like <code class="docutils literal notranslate"><span class="pre">ReadSingleChirpContext</span></code> to ensure the <code class="docutils literal notranslate"><span class="pre">Event</span></code> function is
+<a class="reference external" href="https://en.wikipedia.org/wiki/Reentrancy_(computing)">reentrant</a>.</p>
+<p>The other interesting line in this workload is:</p>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">SampleFromExisting</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+</div>
+<p>This <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#Table.SampleFromExisting">method</a>
+attempts to generate a random value that already exists on the database for the
+column <code class="docutils literal notranslate"><span class="pre">id</span></code>. The first argument to this function should always be
+<code class="docutils literal notranslate"><span class="pre">ctx.Rand</span></code>, which contains a per-worker instance of <code class="docutils literal notranslate"><span class="pre">rand.Rand</span></code>. The
+per-worker <code class="docutils literal notranslate"><span class="pre">rand.Rand</span></code> instances are needed because the global random number
+generator functions exported by Go’s <code class="docutils literal notranslate"><span class="pre">rand</span></code> module uses a global mutex, which
+can slow down mybench.</p>
+<p>Lastly, the workload is created via the <code class="docutils literal notranslate"><span class="pre">mybench.NewWorkload</span></code> generic
+function parameterized by the <code class="docutils literal notranslate"><span class="pre">ReadSingleChirpContext</span></code> type.</p>
+</section>
+<section id="insertchirp">
+<h3><code class="docutils literal notranslate"><span class="pre">InsertChirp</span></code><a class="headerlink" href="#insertchirp" title="Permalink to this heading">¶</a></h3>
+<p>The last workload we will implement is one where we insert new chirps. This is
+implemented in the <code class="docutils literal notranslate"><span class="pre">workload_insert_chirp.go</span></code> file.</p>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w"></span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">  </span><span class="s">&quot;fmt&quot;</span><span class="w"></span>
+
+<span class="w">  </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span><span class="w"></span>
+<span class="p">)</span><span class="w"></span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">InsertChirp</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span><span class="w"></span>
+<span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span><span class="w"></span>
+<span class="w">  </span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="o">*</span><span class="nx">InsertChirp</span><span class="p">)</span><span class="w"> </span><span class="nx">Event</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkerContext</span><span class="p">[</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span><span class="p">])</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="nx">query</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;INSERT INTO %s VALUES (?, ?, ?)&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="nx">id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="nx">content</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;content&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="nx">createdAt</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;created_at&quot;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">  </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Conn</span><span class="p">.</span><span class="nx">Execute</span><span class="p">(</span><span class="nx">query</span><span class="p">,</span><span class="w"> </span><span class="nx">id</span><span class="p">,</span><span class="w"> </span><span class="nx">content</span><span class="p">,</span><span class="w"> </span><span class="nx">createdAt</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">err</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">NewInsertChirp</span><span class="p">(</span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="p">)</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">AbstractWorkload</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="nx">workloadInterface</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">ReadLatestChirps</span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="nx">WorkloadConfig</span><span class="p">:</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="nx">Name</span><span class="p">:</span><span class="w">          </span><span class="s">&quot;InsertChirp&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="nx">WorkloadScale</span><span class="p">:</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="nx">table</span><span class="p">:</span><span class="w"> </span><span class="nx">table</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewWorkload</span><span class="p">[</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span><span class="p">](</span><span class="nx">workloadInterface</span><span class="p">)</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>This is very similar to <a class="reference internal" href="#readlatestchirps">ReadLatestChirps</a>. The only difference is that we
+have these lines in the <code class="docutils literal notranslate"><span class="pre">Event()</span></code> function:</p>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="nx">id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="nx">content</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;content&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="nx">createdAt</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;created_at&quot;</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+</div>
+<p>These lines generate new values for insertion into the database, for the
+<code class="docutils literal notranslate"><span class="pre">id</span></code>, <code class="docutils literal notranslate"><span class="pre">content</span></code> and <code class="docutils literal notranslate"><span class="pre">created_at</span></code> columns. Remember that
+<code class="docutils literal notranslate"><span class="pre">Generate</span></code> generates new values for insertion and <code class="docutils literal notranslate"><span class="pre">SampleFromExisting</span></code>
+generates existing values used in the <code class="docutils literal notranslate"><span class="pre">WHERE</span></code> clauses. If you need to
+generate a value that’s more complex than what the data generators can provide,
+you can write custom code to generate the more complicated values in the
+<code class="docutils literal notranslate"><span class="pre">Event</span></code> function as well.</p>
+</section>
+</section>
+<section id="implementing-benchmarkinterface">
+<span id="id1"></span><h2>Implementing <code class="docutils literal notranslate"><span class="pre">BenchmarkInterface</span></code><a class="headerlink" href="#implementing-benchmarkinterface" title="Permalink to this heading">¶</a></h2>
+<p>We have now implemented the table and the workloads. To run the benchmark, we
+must pass these objects to <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#Run"><code class="docutils literal notranslate"><span class="pre">mybench.Run</span></code></a> via <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#BenchmarkInterface"><code class="docutils literal notranslate"><span class="pre">mybench.BenchmarkInterface</span></code></a>.
+<code class="docutils literal notranslate"><span class="pre">BenchmarkInterface</span></code> requires the definition of four functions:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Name()</span></code>: returns the name of the benchmark.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Workloads()</span></code>: returns a list of workloads defined for this benchmark.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RunLoader()</span></code>: this function is called when the benchmark ran with the
+<code class="docutils literal notranslate"><span class="pre">-load</span></code> flag and should load the database with the initial data.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Config()</span></code>: returns the benchmark config which configures the entire
+benchmark.</p></li>
+</ul>
+<p>We create a struct that satisfies this interface in the <code class="docutils literal notranslate"><span class="pre">benchmark.go</span></code> file:</p>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w"></span>
+
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span><span class="w"></span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">ChirpBench</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="o">*</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">BenchmarkConfig</span><span class="w"></span>
+
+<span class="w">  </span><span class="nx">InitialNumRows</span><span class="w"> </span><span class="kt">int64</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">b</span><span class="w"> </span><span class="nx">ChirpBench</span><span class="p">)</span><span class="w"> </span><span class="nx">Name</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;ChirpBench&quot;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">b</span><span class="w"> </span><span class="nx">ChirpBench</span><span class="p">)</span><span class="w"> </span><span class="nx">RunLoader</span><span class="p">()</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="nx">idGen</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewAutoIncrementGenerator</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="nx">table</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">NewTableChirps</span><span class="p">(</span><span class="nx">idGen</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="nx">table</span><span class="p">.</span><span class="nx">ReloadData</span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="nx">b</span><span class="p">.</span><span class="nx">BenchmarkConfig</span><span class="p">.</span><span class="nx">DatabaseConfig</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="nx">b</span><span class="p">.</span><span class="nx">InitialNumRows</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="mi">200</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="nx">b</span><span class="p">.</span><span class="nx">BenchmarkConfig</span><span class="p">.</span><span class="nx">RateControlConfig</span><span class="p">.</span><span class="nx">Concurrency</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">b</span><span class="w"> </span><span class="nx">ChirpBench</span><span class="p">)</span><span class="w"> </span><span class="nx">Workloads</span><span class="p">()</span><span class="w"> </span><span class="p">([]</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">AbstractWorkload</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="nx">idGen</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewAutoIncrementGeneratorFromDatabase</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">BenchmarkConfig</span><span class="p">.</span><span class="nx">DatabaseConfig</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;chirps&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="nx">table</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">NewTableChirps</span><span class="p">(</span><span class="nx">idGen</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">[]</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">AbstractWorkload</span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="nx">NewReadLatestChirps</span><span class="p">(</span><span class="nx">table</span><span class="p">),</span><span class="w"></span>
+<span class="w">    </span><span class="nx">NewReadSingleChirp</span><span class="p">(</span><span class="nx">table</span><span class="p">),</span><span class="w"></span>
+<span class="w">    </span><span class="nx">NewInsertChirp</span><span class="p">(</span><span class="nx">table</span><span class="p">),</span><span class="w"></span>
+<span class="w">  </span><span class="p">},</span><span class="w"> </span><span class="kc">nil</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The struct <code class="docutils literal notranslate"><span class="pre">ChirpBench</span></code> implements three out of the four methods above
+(everything except <code class="docutils literal notranslate"><span class="pre">Config()</span></code>). This is because the <code class="docutils literal notranslate"><span class="pre">Config()</span></code> method is
+defined by the embedded <code class="docutils literal notranslate"><span class="pre">*mybench.BenchmarkConfig</span></code> objects.
+<code class="docutils literal notranslate"><span class="pre">*mybench.BenchmarkConfig</span></code> should always be embedded as mybench will populate
+it with parameters such as the total event rate (via <code class="docutils literal notranslate"><span class="pre">-eventrate</span></code>),
+concurrency (via <code class="docutils literal notranslate"><span class="pre">-concurrency</span></code>), and so on, via command-line flags. These
+parameters are controlled by mybench and should not be customized. Custom
+parameters defined by custom command-line flags should be stored on the struct
+that implements <code class="docutils literal notranslate"><span class="pre">mybench.BenchmarkInterface</span></code>, such as the <code class="docutils literal notranslate"><span class="pre">ChirpBench</span></code>
+struct defined here. In this case, the <code class="docutils literal notranslate"><span class="pre">InitialNumRows</span></code> is used in
+<code class="docutils literal notranslate"><span class="pre">RunLoader</span></code> so that the <code class="docutils literal notranslate"><span class="pre">chirps</span></code> table can be seeded with a configurable
+number of rows initially.</p>
+<section id="name">
+<h3><code class="docutils literal notranslate"><span class="pre">Name()</span></code><a class="headerlink" href="#name" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">Name()</span></code> function is used when the benchmark data is logged. Typically,
+this should match the name of the type.</p>
+</section>
+<section id="runloader">
+<h3><code class="docutils literal notranslate"><span class="pre">RunLoader()</span></code><a class="headerlink" href="#runloader" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">RunLoader()</span></code> method is called when the command line flag <code class="docutils literal notranslate"><span class="pre">-load</span></code> is
+given. Usually, we can leverage the default data seeding algorithm provided by
+<code class="docutils literal notranslate"><span class="pre">mybench.Table</span></code>, via <code class="docutils literal notranslate"><span class="pre">Table.ReloadData</span></code>. This method drops and recreates the
+table and concurrently seeds it with data generated via the generators
+specified in <code class="docutils literal notranslate"><span class="pre">mybench.Table</span></code>. In the Chirp example shown here, we create the
+<code class="docutils literal notranslate"><span class="pre">mybench.Table</span></code> object via <code class="docutils literal notranslate"><span class="pre">NewTableChirps</span></code>. Since we defined this method
+to take the <code class="docutils literal notranslate"><span class="pre">id</span></code> data generator as an argument, we need to pass it in. During
+the initial loading of the data we need to start generating <code class="docutils literal notranslate"><span class="pre">id</span></code>s starting
+from 1. Thus, we create the <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#AutoIncrementGenerator"><code class="docutils literal notranslate"><span class="pre">mybench.AutoIncrementGenerator</span></code></a> via:</p>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="nx">idGen</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewAutoIncrementGenerator</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The first argument, <code class="docutils literal notranslate"><span class="pre">min</span></code>, specifies the minimum number that the
+<code class="docutils literal notranslate"><span class="pre">AutoIncrementGenerator</span></code> generates if an “existing” value is to be generated.
+This is ignored during the <code class="docutils literal notranslate"><span class="pre">-load</span></code> phase as only “new” values are generated in
+this phase. The second argument, <code class="docutils literal notranslate"><span class="pre">current</span></code>, specifies the number that “new”
+values should be generated from. Specifically, the new value generated is the
+value of <code class="docutils literal notranslate"><span class="pre">current</span></code> after it is atomically incremented by 1. Since the default
+MySQL behavior is to start <code class="docutils literal notranslate"><span class="pre">AUTO_INCREMENT</span></code> columns at the value 1, this
+argument is set to 0.</p>
+<p>After creating the <code class="docutils literal notranslate"><span class="pre">id</span></code> generator and the table, we call the <code class="docutils literal notranslate"><span class="pre">ReloadData</span></code>.
+We pass the value of <code class="docutils literal notranslate"><span class="pre">InitialNumRows</span></code> to it, so that a custom number of rows
+can be seeded in the table. The batch size is chosen here manually to 200,
+which is a good default. The concurrency is set to
+<code class="docutils literal notranslate"><span class="pre">b.BenchmarkConfig.RateControlConfig.Concurrency</span></code>, which is controlled by the
+<code class="docutils literal notranslate"><span class="pre">-concurrency</span></code> flag, and this is also a good default. See <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#Table.ReloadData"><code class="docutils literal notranslate"><span class="pre">Table.ReloadData</span></code></a>
+for more details.</p>
+</section>
+<section id="workloads">
+<h3><code class="docutils literal notranslate"><span class="pre">Workloads()</span></code><a class="headerlink" href="#workloads" title="Permalink to this heading">¶</a></h3>
+<p>This function is called by mybench when it is about to benchmark the workloads.
+It returns a list of workloads that you wish mybench to run. Since we already
+defined constructor functions for each of our workloads, we call them and
+place them in a slice of <code class="docutils literal notranslate"><span class="pre">[]mybench.AbstractWorkload</span></code>, which is returned.
+Once again, we need to define the <code class="docutils literal notranslate"><span class="pre">id</span></code> data generator, as it is not defined
+by the <code class="docutils literal notranslate"><span class="pre">NewTableChirps</span></code> function. In this case, we create the
+<a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#AutoIncrementGenerator"><code class="docutils literal notranslate"><span class="pre">mybench.AutoIncrementGenerator</span></code></a> via:</p>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="nx">idGen</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewAutoIncrementGeneratorFromDatabase</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">BenchmarkConfig</span><span class="p">.</span><span class="nx">DatabaseConfig</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;chirps&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+</div>
+<p>This method will query the database and determine the minimum and maximum
+<code class="docutils literal notranslate"><span class="pre">id</span></code> values and set the <code class="docutils literal notranslate"><span class="pre">min</span></code> and <code class="docutils literal notranslate"><span class="pre">current</span></code> with those values
+respectively. With these set, <code class="docutils literal notranslate"><span class="pre">SampleFromExisting</span></code> will return a random value
+between <code class="docutils literal notranslate"><span class="pre">min</span></code> and <code class="docutils literal notranslate"><span class="pre">current</span></code>, which corresponds to an <code class="docutils literal notranslate"><span class="pre">id</span></code> value that
+should exist on the database.  <code class="docutils literal notranslate"><span class="pre">Generate</span></code> will generate the value
+<code class="docutils literal notranslate"><span class="pre">current+1</span></code> (and also update <code class="docutils literal notranslate"><span class="pre">current</span> <span class="pre">=</span> <span class="pre">current</span> <span class="pre">+</span> <span class="pre">1</span></code>), which always
+corresponds to an <code class="docutils literal notranslate"><span class="pre">id</span></code> value that does not exist in the database. This
+generator ensures both the <a class="reference internal" href="#readsinglechirp">ReadSingleChirp</a> and <a class="reference internal" href="#insertchirp">InsertChirp</a> workloads
+generate suitable <code class="docutils literal notranslate"><span class="pre">id</span></code> values for both <code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">...</span> <span class="pre">WHERE</span> <span class="pre">id</span> <span class="pre">=</span> <span class="pre">?</span></code> and
+<code class="docutils literal notranslate"><span class="pre">INSERT</span> <span class="pre">INTO</span> <span class="pre">...</span> <span class="pre">(id,</span> <span class="pre">...)</span> <span class="pre">VALUE</span> <span class="pre">(?,</span> <span class="pre">...)</span></code>.</p>
+</section>
+</section>
+<section id="putting-it-all-together-in-main">
+<span id="putting-it-together-in-main"></span><h2>Putting it all together in <code class="docutils literal notranslate"><span class="pre">main()</span></code><a class="headerlink" href="#putting-it-all-together-in-main" title="Permalink to this heading">¶</a></h2>
+<p>Lastly, we need to call <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#Run"><code class="docutils literal notranslate"><span class="pre">mybench.Run</span></code></a> in a <code class="docutils literal notranslate"><span class="pre">main()</span></code> function. To do this, we
+define the <code class="docutils literal notranslate"><span class="pre">main.go</span></code> file:</p>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w"></span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="w">  </span><span class="s">&quot;flag&quot;</span><span class="w"></span>
+
+<span class="w">  </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span><span class="w"></span>
+<span class="p">)</span><span class="w"></span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="nx">benchmarkInterface</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ChirpBench</span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="nx">BenchmarkConfig</span><span class="p">:</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewBenchmarkConfig</span><span class="p">(),</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="nx">flag</span><span class="p">.</span><span class="nx">Int64Var</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">benchmarkInterface</span><span class="p">.</span><span class="nx">InitialNumRows</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;numrows&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="nx">_000_000</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;the number of rows to load into the database&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="nx">flag</span><span class="p">.</span><span class="nx">Parse</span><span class="p">()</span><span class="w"></span>
+
+<span class="w">  </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Run</span><span class="p">(</span><span class="nx">benchmarkInterface</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>In the <code class="docutils literal notranslate"><span class="pre">main()</span></code> function, we first create the <code class="docutils literal notranslate"><span class="pre">ChirpBench</span></code> object. The
+<code class="docutils literal notranslate"><span class="pre">BenchmarkConfig</span></code> is initialized with <code class="docutils literal notranslate"><span class="pre">mybench.NewBenchmarkConfig</span></code>, which
+will set up flags such as <code class="docutils literal notranslate"><span class="pre">-load</span></code>, <code class="docutils literal notranslate"><span class="pre">-bench</span></code>, <code class="docutils literal notranslate"><span class="pre">-eventrate</span></code>,
+<code class="docutils literal notranslate"><span class="pre">-concurrency</span></code>, and more. The values specified in the command line flags are
+stored on the <code class="docutils literal notranslate"><span class="pre">BenchmarkConfig</span></code> object. Additionally, since we defined the
+<code class="docutils literal notranslate"><span class="pre">InitialNumRows</span></code> custom parameter, we set it up as a command line flag. This
+is done via Go’s standard <code class="docutils literal notranslate"><span class="pre">flag</span></code> library. We then call <code class="docutils literal notranslate"><span class="pre">flag.Parse()</span></code> to
+ensure the command line flags are parsed and all configuration values are
+filled.</p>
+<p>Once the benchmark interface is properly initialized, we call
+<code class="docutils literal notranslate"><span class="pre">mybench.Run</span></code>, which will run the data loader if <code class="docutils literal notranslate"><span class="pre">-load</span></code> is specified on
+the command line, or the benchmark if <code class="docutils literal notranslate"><span class="pre">-bench</span></code> is specified on the command
+line.</p>
+</section>
+<section id="running-the-benchmark">
+<h2>Running the benchmark<a class="headerlink" href="#running-the-benchmark" title="Permalink to this heading">¶</a></h2>
+<p>First we must build the benchmark that we developed:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>go build -o tutorialbench .
+</pre></div>
+</div>
+<p>We can then run the loader to initialize the database. You’ll need to replace
+the value for <code class="docutils literal notranslate"><span class="pre">-host</span></code>, <code class="docutils literal notranslate"><span class="pre">-user</span></code>, and <code class="docutils literal notranslate"><span class="pre">-pass</span></code> to your database’s
+configuration.</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -load
+<span class="go">INFO[0000] reloading data                                batchSize=200 concurrency=16 table=chirps totalrows=10000000</span>
+<span class="go">INFO[0000] loading data                                  pct=0 rowsInserted=200 table=chirps totalrows=10000000</span>
+<span class="go">INFO[0000] loading data                                  pct=1 rowsInserted=100400 table=chirps totalrows=10000000</span>
+<span class="go">...</span>
+<span class="go">INFO[0056] loading data                                  pct=99.19 rowsInserted=9919400 table=chirps totalrows=10000000</span>
+<span class="go">INFO[0057] data reloaded                                 pct=100 rowsInserted=10000000 table=chirps totalrows=10000000</span>
+</pre></div>
+</div>
+<p>To run the actual benchmark:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -bench
+<span class="go">INFO[0000] running benchmark indefinitely</span>
+<span class="go">INFO[0000] starting benchmark workers                    concurrency=1 rate=50 workload=InsertChirp</span>
+<span class="go">INFO[0000] starting benchmark workers                    concurrency=2 rate=200 workload=ReadSingleChirp</span>
+<span class="go">INFO[0000] starting benchmark workers                    concurrency=8 rate=750 workload=ReadLatestChirps</span>
+<span class="go">...</span>
+</pre></div>
+</div>
+<p>To monitor the benchmark live (throughput and latency for each workload), go to <a class="reference external" href="https://localhost:8005">https://localhost:8005</a>.</p>
+<p>To discover how much your load database can handle, we create a shell script
+that runs the benchmark for 2 minutes each with incrementing event rate. The
+goal is to observe when the database can no longer handle the desired event
+rate. We can save this script to <code class="docutils literal notranslate"><span class="pre">benchmark.sh</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -load
+./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -bench -duration 2m -eventrate <span class="m">3500</span>
+./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -bench -duration 2m -eventrate <span class="m">4000</span>
+./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -bench -duration 2m -eventrate <span class="m">4500</span>
+./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -bench -duration 2m -eventrate <span class="m">5000</span>
+./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -bench -duration 2m -eventrate <span class="m">5500</span>
+./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -bench -duration 2m -eventrate <span class="m">6000</span>
+</pre></div>
+</div>
+<p>In this script, we first reload the data so the database can have a fresh
+start, then we run <code class="docutils literal notranslate"><span class="pre">tutorialbench</span></code> 5 times starting at an event rate of
+3500 and end at an event rate of 6000. Each benchmark has a duration of 2
+minutes.</p>
+<p>To run this script:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>rm -f data.sqlite
+<span class="gp">$ </span>./benchmark.sh
+</pre></div>
+</div>
+<p>Since mybench will append data from runs into an existing <code class="docutils literal notranslate"><span class="pre">data.sqlite</span></code> file
+(even if you use different benchmarks), we remove the <code class="docutils literal notranslate"><span class="pre">data.sqlite</span></code> file
+before we start the benchmarks to ensure the data logged in the file pertains
+to only this sequence of run.</p>
+</section>
+<section id="post-processing-the-data">
+<h2>Post processing the data<a class="headerlink" href="#post-processing-the-data" title="Permalink to this heading">¶</a></h2>
+<p>To post-process the data, copy the <code class="docutils literal notranslate"><span class="pre">data.sqlite</span></code> file into the
+<code class="docutils literal notranslate"><span class="pre">analysis-tools</span></code> folder of the mybench repository. Then, you can run the
+<a class="reference external" href="https://jupyter.org/">Jupyter Notebook</a> called <code class="docutils literal notranslate"><span class="pre">sample.ipynb</span></code>. The dependency of the Jupyter
+Notebook is documented in the <code class="docutils literal notranslate"><span class="pre">environment.yml</span></code> file, which is a file you can
+use to <a class="reference external" href="https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file">install a conda environment</a>. If you run the code in the first
+cell, it will generate a figure that looks like the following:</p>
+<figure class="align-default">
+<img alt="_images/tutorialbench-analysis.svg" src="_images/tutorialbench-analysis.svg" /></figure>
+<p>The top plots show the overall QPS and the bottom plots show the overall
+latency percentil for the 6 benchmark runs. In the top plots, the variable
+<span class="math notranslate nohighlight">\(d\)</span> represents the desired rate for that run. <span class="math notranslate nohighlight">\(\bar{x}\)</span> is the
+average rate achieved by mybench within the duration of the benchmark run.
+<span class="math notranslate nohighlight">\(\sigma\)</span> is the standard deviation of the rate. In the bottom plot, each
+color represents a different percentile. The percentiles that correspond to
+each line are annotated to the right of the plots.</p>
+<p>In this case, we can see that the database can only handle a QPS of about 5000
+for the <code class="docutils literal notranslate"><span class="pre">chirps</span></code> workload as the observed event rate plateaus once the
+desired event rate reaches that point. Additionally, the latency distribution
+shifts higher around 5000 events/s.</p>
+</section>
+<section id="review">
+<h2>Review<a class="headerlink" href="#review" title="Permalink to this heading">¶</a></h2>
+<p>In this tutorial, we have learned to:</p>
+<ul class="simple">
+<li><p>create a basic model for a workload;</p></li>
+<li><p>create a project structure for a custom mybench benchmark;</p></li>
+<li><p>define the table columns with <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#Table"><code class="docutils literal notranslate"><span class="pre">mybench.Table</span></code></a> with both their SQL definition
+and their associated generators;</p></li>
+<li><p>implement <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#WorkloadInterface"><code class="docutils literal notranslate"><span class="pre">mybench.WorkloadInterface</span></code></a> with workloads that both require and
+does not require custom context data;</p></li>
+<li><p>use the data generator to generate values for insertion (<code class="docutils literal notranslate"><span class="pre">Generate()</span></code>) and
+values used for WHERE clauses (<code class="docutils literal notranslate"><span class="pre">SampleFromExisting()</span></code>);</p></li>
+<li><p>implement <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#BenchmarkInterface"><code class="docutils literal notranslate"><span class="pre">mybench.BenchmarkInterface</span></code></a>;</p></li>
+<li><p>put everything together in a <code class="docutils literal notranslate"><span class="pre">main()</span></code> function so it can be called from
+command line;</p></li>
+<li><p>write code that takes allow the benchmark to take custom configurations;</p></li>
+<li><p>run the benchmark with varying event rates and duration;</p></li>
+<li><p>perform a sequence of benchmark runs to ascertain the limits of the database;</p></li>
+<li><p>post process the data with Python to visualize a sequence of benchmark runs.</p></li>
+</ul>
+<p>The code for <code class="docutils literal notranslate"><span class="pre">tutorialbench</span></code> can be found <a class="reference external" href="https://github.com/Shopify/mybench/tree/main/benchmarks/tutorialbench">here</a>.</p>
+</section>
 </section>
 
 
@@ -70,7 +765,18 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="introduction.html">What is mybench?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting started</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial: Writing a custom benchmark</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial: Writing and running a custom benchmark</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#modeling-the-workload">Modeling the workload</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#creating-a-project-structure">Creating a project structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#defining-the-table-and-data-generators">Defining the table and data generators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#implementing-workloadinterface">Implementing <code class="docutils literal notranslate"><span class="pre">WorkloadInterface</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#implementing-benchmarkinterface">Implementing <code class="docutils literal notranslate"><span class="pre">BenchmarkInterface</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#putting-it-all-together-in-main">Putting it all together in <code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-the-benchmark">Running the benchmark</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#post-processing-the-data">Post processing the data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#review">Review</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="detailed-design-doc.html">Detailed design documentation</a></li>
 </ul>
 
