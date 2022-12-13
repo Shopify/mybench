@@ -18,9 +18,17 @@ import (
 
 const characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-// TODO: have the generators track the existing values by modifying this
-// interface so existing values can be added and removed and SampleFromExisting
-// only ever sample from known existing values?
+// An interface for the data generator.
+//
+// There are two ways to generate data:
+//
+// 1. Generate a new value to be inserted into the database. This is generated
+// via the Generate call.
+// 2. Generate an "existing" value to be used in the WHERE clause of a SQL
+// statement. This is generated via the SampleFromExisting call. Note, most
+// generators cannot guarantee that an existing value is generated, as it would
+// be probihitively expensive to keep track of all the existing data. Consult
+// the documentation of the specific generators for details.
 type DataGenerator interface {
 	Generate(*Rand) interface{}
 	SampleFromExisting(*Rand) interface{}
