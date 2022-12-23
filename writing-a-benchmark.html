@@ -94,18 +94,18 @@ We only have a single table with the following columns:</p>
 <section id="workload-definition">
 <h3>Workload definition<a class="headerlink" href="#workload-definition" title="Permalink to this heading">¶</a></h3>
 <p>There are three workloads that query the <code class="docutils literal notranslate"><span class="pre">chirps</span></code> table:</p>
-<p>One workload consists of reading the 200 of the latest chirps via the following
-query, which consists of 75% of the traffic:</p>
+<p>One workload consists of reading the 200 latest chirps via the following
+query, which makes up 75% of the traffic:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">chirps</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">200</span><span class="w"></span>
 </pre></div>
 </div>
-<p>A second workload consists of reading a single chirp based on its <code class="docutils literal notranslate"><span class="pre">id</span></code>, which
-consists of 20% of the traffic:</p>
+<p>A second workload consists of reading a single chirp based on its <code class="docutils literal notranslate"><span class="pre">id</span></code>. This query
+makes up 20% of the traffic:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">chirps</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">?</span><span class="w"></span>
 </pre></div>
 </div>
 <p>The third workload consists of the creation of a new chirp with the following
-query, which consists of 5% of the traffic:</p>
+query, which makes up 5% of the traffic:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">chirps</span><span class="w"> </span><span class="n">VALUE</span><span class="w"> </span><span class="p">(</span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="o">?</span><span class="p">,</span><span class="w"> </span><span class="n">NOW</span><span class="p">())</span><span class="w"></span>
 </pre></div>
 </div>
@@ -212,10 +212,10 @@ database. The generation of “new” and “existing” values are done via the
 <code class="docutils literal notranslate"><span class="pre">Generator.Generate()</span></code> and <code class="docutils literal notranslate"><span class="pre">Generator.SampleFromExisting()</span></code> functions,
 respectively.</p>
 <p>The generator for the <code class="docutils literal notranslate"><span class="pre">id</span></code> column is not defined in this function but is
-instead passed in as function arguments. This is because the behaviour of this
-data generator should different between the <code class="docutils literal notranslate"><span class="pre">-load</span></code> and <code class="docutils literal notranslate"><span class="pre">-bench</span></code> phases.
+instead passed in as a function argument. This is because the behaviour of this
+data generator should be different between the <code class="docutils literal notranslate"><span class="pre">-load</span></code> and <code class="docutils literal notranslate"><span class="pre">-bench</span></code> phases.
 During <code class="docutils literal notranslate"><span class="pre">-load</span></code>, the data generator needs to generate unique <code class="docutils literal notranslate"><span class="pre">id</span></code> values to
-be inserted into the database. During <code class="docutils literal notranslate"><span class="pre">-bench</span></code>, the data generators needs to
+be inserted into the database. During <code class="docutils literal notranslate"><span class="pre">-bench</span></code>, the data generator needs to
 sample <code class="docutils literal notranslate"><span class="pre">id</span></code> values that likely exist in the database. By passing a different
 <code class="docutils literal notranslate"><span class="pre">id</span></code> generator during each of these phases, the desired behaviours can be
 achieved.</p>
@@ -250,7 +250,7 @@ specified in the command line (via the <code class="docutils literal notranslate
 will be called by multiple workers (and thus goroutines) and must be
 thread-safe.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">Config()</span></code>: this returns a <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#WorkloadConfig"><code class="docutils literal notranslate"><span class="pre">mybench.WorkloadConfig</span></code></a> which configures
-parameters such as the percentage events allocated to this workload (via
+parameters such as the percentage of events allocated to this workload (via
 <code class="docutils literal notranslate"><span class="pre">WorkloadScale</span></code>), the database config (via <code class="docutils literal notranslate"><span class="pre">DatabaseConfig</span></code>), the name of
 the workload (via <code class="docutils literal notranslate"><span class="pre">Name</span></code>), and more.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">NewContextData()</span></code>: this returns a new context data object of an arbitrary
@@ -262,7 +262,7 @@ variable that stores thread-local data. We will see how this can be used in
 <section id="readlatestchirps">
 <h3><code class="docutils literal notranslate"><span class="pre">ReadLatestChirps</span></code><a class="headerlink" href="#readlatestchirps" title="Permalink to this heading">¶</a></h3>
 <p>The first workload we will define is a simple workload that reads the latest
-200 chirps, which consists of 75% of the traffic. This is defined in the
+200 chirps, which generates 75% of the traffic. This is defined in the
 <code class="docutils literal notranslate"><span class="pre">workload_read_latest_chirps.go</span></code> file:</p>
 <div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w"></span>
 
@@ -313,10 +313,10 @@ each running with its own goroutine, and connections are not thread safe. Thus,
 each worker has its own <code class="docutils literal notranslate"><span class="pre">mybench.Connection</span></code> object and these connections are
 passed to the <code class="docutils literal notranslate"><span class="pre">Event</span></code> function to ensure thread safety.</p>
 <p>Calling <code class="docutils literal notranslate"><span class="pre">ctx.Conn.Execute</span></code> executes the query against the database. If an
-error occurs, it is returned to mybench. For this workload, since there is only
+error occurs, it is returned to mybench. For this workload, there is only
 a single query.</p>
 <p>The workload is configured in the <code class="docutils literal notranslate"><span class="pre">NewReadLatestChirps</span></code> function that
-initializes the struct. The most important lines are the lines that defines the
+initializes the struct. The most important lines are the lines that define the
 <code class="docutils literal notranslate"><span class="pre">Name</span></code> of the workload, which is used for statistics reporting; and the
 <code class="docutils literal notranslate"><span class="pre">WorkloadScale</span></code> of the workload, which is the percentage (as expressed by a
 number between 0 and 1) of the events that should be allocated to this workload.
@@ -661,7 +661,7 @@ configuration.</p>
 </pre></div>
 </div>
 <p>To monitor the benchmark live (throughput and latency for each workload), go to <a class="reference external" href="https://localhost:8005">https://localhost:8005</a>.</p>
-<p>To discover how much your load database can handle, we create a shell script
+<p>To discover how much load our database can handle, we create a shell script
 that runs the benchmark for 2 minutes each with incrementing event rate. The
 goal is to observe when the database can no longer handle the desired event
 rate. We can save this script to <code class="docutils literal notranslate"><span class="pre">benchmark.sh</span></code>.</p>
@@ -687,7 +687,7 @@ minutes.</p>
 <p>Since mybench will append data from runs into an existing <code class="docutils literal notranslate"><span class="pre">data.sqlite</span></code> file
 (even if you use different benchmarks), we remove the <code class="docutils literal notranslate"><span class="pre">data.sqlite</span></code> file
 before we start the benchmarks to ensure the data logged in the file pertains
-to only this sequence of run.</p>
+to only this sequence of runs.</p>
 </section>
 <section id="post-processing-the-data">
 <h2>Post processing the data<a class="headerlink" href="#post-processing-the-data" title="Permalink to this heading">¶</a></h2>
@@ -700,7 +700,7 @@ cell, it will generate a figure that looks like the following:</p>
 <figure class="align-default">
 <img alt="_images/tutorialbench-analysis.svg" src="_images/tutorialbench-analysis.svg" /></figure>
 <p>The top plots show the overall QPS and the bottom plots show the overall
-latency percentil for the 6 benchmark runs. In the top plots, the variable
+latency percentiles for the 6 benchmark runs. In the top plots, the variable
 <span class="math notranslate nohighlight">\(d\)</span> represents the desired rate for that run. <span class="math notranslate nohighlight">\(\bar{x}\)</span> is the
 average rate achieved by mybench within the duration of the benchmark run.
 <span class="math notranslate nohighlight">\(\sigma\)</span> is the standard deviation of the rate. In the bottom plot, each

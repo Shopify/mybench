@@ -61,22 +61,22 @@ Workload definition
 
 There are three workloads that query the ``chirps`` table:
 
-One workload consists of reading the 200 of the latest chirps via the following
-query, which consists of 75% of the traffic:
+One workload consists of reading the 200 latest chirps via the following
+query, which makes up 75% of the traffic:
 
 .. code-block:: sql
 
    SELECT * FROM chirps ORDER BY created_at DESC LIMIT 200
 
-A second workload consists of reading a single chirp based on its ``id``, which
-consists of 20% of the traffic:
+A second workload consists of reading a single chirp based on its ``id``. This query 
+makes up 20% of the traffic:
 
 .. code-block:: sql
 
    SELECT * FROM chirps WHERE id = ?
 
 The third workload consists of the creation of a new chirp with the following
-query, which consists of 5% of the traffic:
+query, which makes up 5% of the traffic:
 
 .. code-block:: sql
 
@@ -154,10 +154,10 @@ database. The generation of "new" and "existing" values are done via the
 respectively.
 
 The generator for the ``id`` column is not defined in this function but is
-instead passed in as function arguments. This is because the behaviour of this
-data generator should different between the ``-load`` and ``-bench`` phases.
+instead passed in as a function argument. This is because the behaviour of this
+data generator should be different between the ``-load`` and ``-bench`` phases.
 During ``-load``, the data generator needs to generate unique ``id`` values to
-be inserted into the database. During ``-bench``, the data generators needs to
+be inserted into the database. During ``-bench``, the data generator needs to
 sample ``id`` values that likely exist in the database. By passing a different
 ``id`` generator during each of these phases, the desired behaviours can be
 achieved.
@@ -200,7 +200,7 @@ to be implemented:
   will be called by multiple workers (and thus goroutines) and must be
   thread-safe.
 * ``Config()``: this returns a |mybench.WorkloadConfig|_ which configures
-  parameters such as the percentage events allocated to this workload (via
+  parameters such as the percentage of events allocated to this workload (via
   ``WorkloadScale``), the database config (via ``DatabaseConfig``), the name of
   the workload (via ``Name``), and more.
 * ``NewContextData()``: this returns a new context data object of an arbitrary
@@ -213,7 +213,7 @@ to be implemented:
 ====================
 
 The first workload we will define is a simple workload that reads the latest
-200 chirps, which consists of 75% of the traffic. This is defined in the
+200 chirps, which generates 75% of the traffic. This is defined in the
 ``workload_read_latest_chirps.go`` file:
 
 .. literalinclude:: ../benchmarks/tutorialbench/workload_read_latest_chirps.go
@@ -239,11 +239,11 @@ each worker has its own ``mybench.Connection`` object and these connections are
 passed to the ``Event`` function to ensure thread safety.
 
 Calling ``ctx.Conn.Execute`` executes the query against the database. If an
-error occurs, it is returned to mybench. For this workload, since there is only
+error occurs, it is returned to mybench. For this workload, there is only
 a single query.
 
 The workload is configured in the ``NewReadLatestChirps`` function that
-initializes the struct. The most important lines are the lines that defines the
+initializes the struct. The most important lines are the lines that define the
 ``Name`` of the workload, which is used for statistics reporting; and the
 ``WorkloadScale`` of the workload, which is the percentage (as expressed by a
 number between 0 and 1) of the events that should be allocated to this workload.
@@ -497,7 +497,7 @@ To run the actual benchmark:
 
 To monitor the benchmark live (throughput and latency for each workload), go to https://localhost:8005.
 
-To discover how much your load database can handle, we create a shell script
+To discover how much load our database can handle, we create a shell script
 that runs the benchmark for 2 minutes each with incrementing event rate. The
 goal is to observe when the database can no longer handle the desired event
 rate. We can save this script to ``benchmark.sh``.
@@ -528,7 +528,7 @@ To run this script:
 Since mybench will append data from runs into an existing ``data.sqlite`` file
 (even if you use different benchmarks), we remove the ``data.sqlite`` file
 before we start the benchmarks to ensure the data logged in the file pertains
-to only this sequence of run.
+to only this sequence of runs.
 
 ------------------------
 Post processing the data
@@ -544,7 +544,7 @@ cell, it will generate a figure that looks like the following:
 .. figure:: images/tutorialbench-analysis.svg
 
 The top plots show the overall QPS and the bottom plots show the overall
-latency percentil for the 6 benchmark runs. In the top plots, the variable
+latency percentiles for the 6 benchmark runs. In the top plots, the variable
 :math:`d` represents the desired rate for that run. :math:`\bar{x}` is the
 average rate achieved by mybench within the duration of the benchmark run.
 :math:`\sigma` is the standard deviation of the rate. In the bottom plot, each
