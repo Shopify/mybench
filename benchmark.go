@@ -82,6 +82,8 @@ func (b *Benchmark) Start() {
 	b.startTime = time.Now()
 
 	b.workloadWg.Add(len(b.workloads))
+	workerInitializationWg := &sync.WaitGroup{}
+
 	for _, workload := range b.workloads {
 		// Calculate per workload rate control config by scaling it with workload scale
 		var perWorkloadRateControlConfig RateControlConfig = b.BenchmarkConfig.RateControlConfig // take a copy
@@ -99,12 +101,17 @@ func (b *Benchmark) Start() {
 		// the Workload before it is set.
 		workload.FinishInitialization(b.BenchmarkConfig.DatabaseConfig, perWorkloadRateControlConfig)
 
+		workerInitializationWg.Add(perWorkloadRateControlConfig.Concurrency)
 		go func(workload AbstractWorkload) {
 			defer b.workloadWg.Done()
 
-			workload.Run(b.workloadCtx, b.startTime)
+			workload.Run(b.workloadCtx, workerInitializationWg, b.startTime)
 		}(workload)
 	}
+
+	b.logger.Info("waiting for all workers to start")
+	workerInitializationWg.Wait()
+	b.logger.Info("all workers running")
 
 	b.dataLoggerWg.Add(1)
 	go func() {

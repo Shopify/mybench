@@ -151,7 +151,7 @@ type Workload[ContextDataT any] struct {
 //
 // Is this kind of a hack? Maybe. I haven't decided yet.
 type AbstractWorkload interface {
-	Run(context.Context, time.Time)
+	Run(context.Context, *sync.WaitGroup, time.Time)
 	Config() WorkloadConfig
 
 	// We need to set the RateControlConfig on the Workload object, because the
@@ -216,7 +216,7 @@ func (w *Workload[ContextDataT]) FinishInitialization(databaseConfig DatabaseCon
 	w.rateControlConfig = rateControlConfig
 }
 
-func (w *Workload[ContextDataT]) Run(ctx context.Context, startTime time.Time) {
+func (w *Workload[ContextDataT]) Run(ctx context.Context, workerInitializationWg *sync.WaitGroup, startTime time.Time) {
 	var err error
 	w.workers = make([]*BenchmarkWorker[ContextDataT], w.rateControlConfig.Concurrency)
 	for i := 0; i < w.rateControlConfig.Concurrency; i++ {
@@ -235,7 +235,7 @@ func (w *Workload[ContextDataT]) Run(ctx context.Context, startTime time.Time) {
 	for i := 0; i < w.rateControlConfig.Concurrency; i++ {
 		go func(worker *BenchmarkWorker[ContextDataT]) {
 			defer w.workersWg.Done()
-			err := worker.Run(ctx, startTime, w.databaseConfig, w.rateControlConfig)
+			err := worker.Run(ctx, workerInitializationWg, startTime, w.databaseConfig, w.rateControlConfig)
 			if err != nil {
 				w.logger.WithError(err).Panic("failed to run worker")
 			}
