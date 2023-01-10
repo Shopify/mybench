@@ -40,18 +40,18 @@
 <p>This guide walks you through installing and running an example benchmark
 implemented with mybench.</p>
 <p>To download and compile <code class="docutils literal notranslate"><span class="pre">examplebench</span></code>:</p>
-<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>git clone https://github.com/Shopify/mybench.git
-<span class="gp">$ </span><span class="nb">cd</span> mybench
-<span class="gp">$ </span>make examplebench
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Shopify/mybench.git
+<span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span>mybench
+<span class="gp">$ </span>make<span class="w"> </span>examplebench
 </pre></div>
 </div>
 <p>This will compile <code class="docutils literal notranslate"><span class="pre">examplebench</span></code> into a folder called <code class="docutils literal notranslate"><span class="pre">build</span></code>. To run
 <code class="docutils literal notranslate"><span class="pre">examplebench</span></code>, you must first seed the database:</p>
-<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>build/examplebench <span class="se">\</span>
-   --host<span class="o">=</span>mysql.host <span class="se">\</span>
-   --user<span class="o">=</span>username <span class="se">\</span>
-   --pass<span class="o">=</span>password <span class="se">\</span>
-   --load
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>build/examplebench<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--host<span class="o">=</span>mysql.host<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--user<span class="o">=</span>username<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--pass<span class="o">=</span>password<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--load
 </pre></div>
 </div>
 <p>You need to replace the <code class="docutils literal notranslate"><span class="pre">mysql.host</span></code> with the host or IP address of MySQL,
@@ -59,12 +59,12 @@ implemented with mybench.</p>
 password you can connect to. This will load the database with 1 million rows of
 data (in the table <code class="docutils literal notranslate"><span class="pre">example_table</span></code> in the database <code class="docutils literal notranslate"><span class="pre">mybench</span></code>).</p>
 <p>Once this is done, you can then run the benchmark:</p>
-<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>build/examplebench <span class="se">\</span>
-   --host<span class="o">=</span>mysql.host <span class="se">\</span>
-   --user<span class="o">=</span>username <span class="se">\</span>
-   --pass<span class="o">=</span>password <span class="se">\</span>
-   --bench <span class="se">\</span>
-   --eventrate<span class="o">=</span><span class="m">10000</span>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>build/examplebench<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--host<span class="o">=</span>mysql.host<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--user<span class="o">=</span>username<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--pass<span class="o">=</span>password<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--bench<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--eventrate<span class="o">=</span><span class="m">10000</span>
 </pre></div>
 </div>
 <p>The default event rate for examplebench is 1000 event/s split evenly between its

@@ -96,17 +96,17 @@ We only have a single table with the following columns:</p>
 <p>There are three workloads that query the <code class="docutils literal notranslate"><span class="pre">chirps</span></code> table:</p>
 <p>One workload consists of reading the 200 latest chirps via the following
 query, which makes up 75% of the traffic:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">chirps</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">200</span><span class="w"></span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">chirps</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">200</span>
 </pre></div>
 </div>
 <p>A second workload consists of reading a single chirp based on its <code class="docutils literal notranslate"><span class="pre">id</span></code>. This query
 makes up 20% of the traffic:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">chirps</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">?</span><span class="w"></span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">chirps</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">?</span>
 </pre></div>
 </div>
 <p>The third workload consists of the creation of a new chirp with the following
 query, which makes up 5% of the traffic:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">chirps</span><span class="w"> </span><span class="n">VALUE</span><span class="w"> </span><span class="p">(</span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="o">?</span><span class="p">,</span><span class="w"> </span><span class="n">NOW</span><span class="p">())</span><span class="w"></span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">chirps</span><span class="w"> </span><span class="n">VALUE</span><span class="w"> </span><span class="p">(</span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="o">?</span><span class="p">,</span><span class="w"> </span><span class="n">NOW</span><span class="p">())</span>
 </pre></div>
 </div>
 <p>The length of the data in the <code class="docutils literal notranslate"><span class="pre">content</span></code> field for each row in the <code class="docutils literal notranslate"><span class="pre">chirps</span></code>
@@ -124,9 +124,9 @@ have 10 million chirps in the database.</p>
 <p>Note: all code for this tutorial can be found <a class="reference external" href="https://github.com/Shopify/mybench/tree/main/benchmarks/tutorialbench">here</a>.</p>
 <p>Mybench is designed to be used as a library. The first step to creating a
 benchmark involves importing mybench via <cite>go mod</cite>:</p>
-<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>mkdir tutorialbench <span class="o">&amp;&amp;</span> <span class="nb">cd</span> tutorialbench
-<span class="gp">$ </span>go mod init example.com/tutorialbench
-<span class="gp">$ </span>go get github.com/Shopify/mybench
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>mkdir<span class="w"> </span>tutorialbench<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>tutorialbench
+<span class="gp">$ </span>go<span class="w"> </span>mod<span class="w"> </span>init<span class="w"> </span>example.com/tutorialbench
+<span class="gp">$ </span>go<span class="w"> </span>get<span class="w"> </span>github.com/Shopify/mybench
 </pre></div>
 </div>
 <p>For this project, let’s create four files:</p>
@@ -152,49 +152,49 @@ splits these files so they are more easily embedded in this document.</p>
 <p>Before running the benchmark, we need to first generate the initial data for
 the table. To do this, we can create an instance of <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#Table"><code class="docutils literal notranslate"><span class="pre">mybench.Table</span></code></a> in
 <code class="docutils literal notranslate"><span class="pre">table_chirps.go</span></code>:</p>
-<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w"></span>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
-<span class="w">  </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span><span class="w"></span>
-<span class="p">)</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span>
+<span class="p">)</span>
 
-<span class="kd">func</span><span class="w"> </span><span class="nx">NewTableChirps</span><span class="p">(</span><span class="nx">idGen</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">DataGenerator</span><span class="p">)</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">InitializeTable</span><span class="p">(</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;chirps&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="nx">Columns</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="o">*</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Column</span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;id&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="nx">Definition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;BIGINT(20) NOT NULL AUTO_INCREMENT&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="nx">Generator</span><span class="p">:</span><span class="w">  </span><span class="nx">idGen</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="p">},</span><span class="w"></span>
-<span class="w">      </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;content&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="nx">Definition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;VARCHAR(140)&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="nx">Generator</span><span class="p">:</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewHistogramLengthStringGenerator</span><span class="p">(</span><span class="w"></span>
-<span class="w">          </span><span class="p">[]</span><span class="kt">float64</span><span class="p">{</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span><span class="w"> </span><span class="mf">20.5</span><span class="p">,</span><span class="w"> </span><span class="mf">40.5</span><span class="p">,</span><span class="w"> </span><span class="mf">60.5</span><span class="p">,</span><span class="w"> </span><span class="mf">80.5</span><span class="p">,</span><span class="w"> </span><span class="mf">100.5</span><span class="p">,</span><span class="w"> </span><span class="mf">120.5</span><span class="p">,</span><span class="w"> </span><span class="mf">140.5</span><span class="p">},</span><span class="w"></span>
-<span class="w">          </span><span class="p">[]</span><span class="kt">float64</span><span class="p">{</span><span class="w"></span>
-<span class="w">            </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="c1">// [0, 20)</span><span class="w"></span>
-<span class="w">            </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="c1">// [20, 40)</span><span class="w"></span>
-<span class="w">            </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="c1">// [40, 60)</span><span class="w"></span>
-<span class="w">            </span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="c1">// [60, 80)</span><span class="w"></span>
-<span class="w">            </span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="c1">// [80, 100)</span><span class="w"></span>
-<span class="w">            </span><span class="mi">25</span><span class="p">,</span><span class="w"> </span><span class="c1">// [100, 120)</span><span class="w"></span>
-<span class="w">            </span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="c1">// [120, 140)</span><span class="w"></span>
-<span class="w">          </span><span class="p">},</span><span class="w"></span>
-<span class="w">        </span><span class="p">),</span><span class="w"></span>
-<span class="w">      </span><span class="p">},</span><span class="w"></span>
-<span class="w">      </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;created_at&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="nx">Definition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;DATETIME&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="nx">Generator</span><span class="p">:</span><span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewNowGenerator</span><span class="p">(),</span><span class="w"></span>
-<span class="w">      </span><span class="p">},</span><span class="w"></span>
-<span class="w">    </span><span class="p">},</span><span class="w"></span>
-<span class="w">    </span><span class="nx">Indices</span><span class="p">:</span><span class="w"> </span><span class="p">[][]</span><span class="kt">string</span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="p">{</span><span class="s">&quot;created_at&quot;</span><span class="p">},</span><span class="w"></span>
-<span class="w">    </span><span class="p">},</span><span class="w"></span>
-<span class="w">    </span><span class="nx">PrimaryKey</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;id&quot;</span><span class="p">},</span><span class="w"></span>
-<span class="w">  </span><span class="p">})</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="kd">func</span><span class="w"> </span><span class="nx">NewTableChirps</span><span class="p">(</span><span class="nx">idGen</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">DataGenerator</span><span class="p">)</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">InitializeTable</span><span class="p">(</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="p">{</span>
+<span class="w">    </span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;chirps&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">Columns</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="o">*</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Column</span><span class="p">{</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;id&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">Definition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;BIGINT(20) NOT NULL AUTO_INCREMENT&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">Generator</span><span class="p">:</span><span class="w">  </span><span class="nx">idGen</span><span class="p">,</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;content&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">Definition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;VARCHAR(140)&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">Generator</span><span class="p">:</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewHistogramLengthStringGenerator</span><span class="p">(</span>
+<span class="w">          </span><span class="p">[]</span><span class="kt">float64</span><span class="p">{</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span><span class="w"> </span><span class="mf">20.5</span><span class="p">,</span><span class="w"> </span><span class="mf">40.5</span><span class="p">,</span><span class="w"> </span><span class="mf">60.5</span><span class="p">,</span><span class="w"> </span><span class="mf">80.5</span><span class="p">,</span><span class="w"> </span><span class="mf">100.5</span><span class="p">,</span><span class="w"> </span><span class="mf">120.5</span><span class="p">,</span><span class="w"> </span><span class="mf">140.5</span><span class="p">},</span>
+<span class="w">          </span><span class="p">[]</span><span class="kt">float64</span><span class="p">{</span>
+<span class="w">            </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="c1">// [0, 20)</span>
+<span class="w">            </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="c1">// [20, 40)</span>
+<span class="w">            </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="c1">// [40, 60)</span>
+<span class="w">            </span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="c1">// [60, 80)</span>
+<span class="w">            </span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="c1">// [80, 100)</span>
+<span class="w">            </span><span class="mi">25</span><span class="p">,</span><span class="w"> </span><span class="c1">// [100, 120)</span>
+<span class="w">            </span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="c1">// [120, 140)</span>
+<span class="w">          </span><span class="p">},</span>
+<span class="w">        </span><span class="p">),</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;created_at&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">Definition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;DATETIME&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">Generator</span><span class="p">:</span><span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewNowGenerator</span><span class="p">(),</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">Indices</span><span class="p">:</span><span class="w"> </span><span class="p">[][]</span><span class="kt">string</span><span class="p">{</span>
+<span class="w">      </span><span class="p">{</span><span class="s">&quot;created_at&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">PrimaryKey</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;id&quot;</span><span class="p">},</span>
+<span class="w">  </span><span class="p">})</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">mybench.Table</span></code> contains the definition for each column via the <code class="docutils literal notranslate"><span class="pre">Name</span></code> and
@@ -264,37 +264,37 @@ variable that stores thread-local data. We will see how this can be used in
 <p>The first workload we will define is a simple workload that reads the latest
 200 chirps, which generates 75% of the traffic. This is defined in the
 <code class="docutils literal notranslate"><span class="pre">workload_read_latest_chirps.go</span></code> file:</p>
-<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w"></span>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
-<span class="w">  </span><span class="s">&quot;fmt&quot;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="s">&quot;fmt&quot;</span>
 
-<span class="w">  </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span><span class="w"></span>
-<span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span>
+<span class="p">)</span>
 
-<span class="kd">type</span><span class="w"> </span><span class="nx">ReadLatestChirps</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span><span class="w"></span>
-<span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span><span class="w"></span>
-<span class="w">  </span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="kd">type</span><span class="w"> </span><span class="nx">ReadLatestChirps</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span>
+<span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span>
+<span class="w">  </span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span>
+<span class="p">}</span>
 
-<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="o">*</span><span class="nx">ReadLatestChirps</span><span class="p">)</span><span class="w"> </span><span class="nx">Event</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkerContext</span><span class="p">[</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span><span class="p">])</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="nx">query</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;SELECT * FROM %s ORDER BY created_at DESC LIMIT 200&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Conn</span><span class="p">.</span><span class="nx">Execute</span><span class="p">(</span><span class="nx">query</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">err</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="o">*</span><span class="nx">ReadLatestChirps</span><span class="p">)</span><span class="w"> </span><span class="nx">Event</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkerContext</span><span class="p">[</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span><span class="p">])</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">query</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;SELECT * FROM %s ORDER BY created_at DESC LIMIT 200&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span>
+<span class="w">  </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Conn</span><span class="p">.</span><span class="nx">Execute</span><span class="p">(</span><span class="nx">query</span><span class="p">)</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">err</span>
+<span class="p">}</span>
 
-<span class="kd">func</span><span class="w"> </span><span class="nx">NewReadLatestChirps</span><span class="p">(</span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="p">)</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">AbstractWorkload</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="nx">workloadInterface</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">ReadLatestChirps</span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="nx">WorkloadConfig</span><span class="p">:</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="nx">Name</span><span class="p">:</span><span class="w">          </span><span class="s">&quot;ReadLatestChirps&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="nx">WorkloadScale</span><span class="p">:</span><span class="w"> </span><span class="mf">0.75</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="p">},</span><span class="w"></span>
-<span class="w">    </span><span class="nx">table</span><span class="p">:</span><span class="w"> </span><span class="nx">table</span><span class="p">,</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="kd">func</span><span class="w"> </span><span class="nx">NewReadLatestChirps</span><span class="p">(</span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="p">)</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">AbstractWorkload</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">workloadInterface</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">ReadLatestChirps</span><span class="p">{</span>
+<span class="w">    </span><span class="nx">WorkloadConfig</span><span class="p">:</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span><span class="p">{</span>
+<span class="w">      </span><span class="nx">Name</span><span class="p">:</span><span class="w">          </span><span class="s">&quot;ReadLatestChirps&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">WorkloadScale</span><span class="p">:</span><span class="w"> </span><span class="mf">0.75</span><span class="p">,</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">table</span><span class="p">:</span><span class="w"> </span><span class="nx">table</span><span class="p">,</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewWorkload</span><span class="p">[</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span><span class="p">](</span><span class="nx">workloadInterface</span><span class="p">)</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewWorkload</span><span class="p">[</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span><span class="p">](</span><span class="nx">workloadInterface</span><span class="p">)</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Note that we only defined the <code class="docutils literal notranslate"><span class="pre">Event</span></code> function. This is because <code class="docutils literal notranslate"><span class="pre">Config</span></code> is
@@ -338,48 +338,48 @@ hold its own prepared statement. The only way to do this is via a custom
 context data, which is initialized once per worker by mybench. This is all done
 with the <code class="docutils literal notranslate"><span class="pre">ReadSingleChirp</span></code> workload in the <code class="docutils literal notranslate"><span class="pre">workload_read_single_chirp.go</span></code>
 file:</p>
-<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w"></span>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
-<span class="w">  </span><span class="s">&quot;fmt&quot;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="s">&quot;fmt&quot;</span>
 
-<span class="w">  </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span><span class="w"></span>
-<span class="w">  </span><span class="s">&quot;github.com/go-mysql-org/go-mysql/client&quot;</span><span class="w"></span>
-<span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span>
+<span class="w">  </span><span class="s">&quot;github.com/go-mysql-org/go-mysql/client&quot;</span>
+<span class="p">)</span>
 
-<span class="kd">type</span><span class="w"> </span><span class="nx">ReadSingleChirpContext</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="nx">stmt</span><span class="w"> </span><span class="o">*</span><span class="nx">client</span><span class="p">.</span><span class="nx">Stmt</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="kd">type</span><span class="w"> </span><span class="nx">ReadSingleChirpContext</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">stmt</span><span class="w"> </span><span class="o">*</span><span class="nx">client</span><span class="p">.</span><span class="nx">Stmt</span>
+<span class="p">}</span>
 
-<span class="kd">type</span><span class="w"> </span><span class="nx">ReadSingleChirp</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span><span class="w"></span>
-<span class="w">  </span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="kd">type</span><span class="w"> </span><span class="nx">ReadSingleChirp</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span>
+<span class="w">  </span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span>
+<span class="p">}</span>
 
-<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="o">*</span><span class="nx">ReadSingleChirp</span><span class="p">)</span><span class="w"> </span><span class="nx">Event</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkerContext</span><span class="p">[</span><span class="nx">ReadSingleChirpContext</span><span class="p">])</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="nx">id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">SampleFromExisting</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Data</span><span class="p">.</span><span class="nx">stmt</span><span class="p">.</span><span class="nx">Execute</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">err</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="o">*</span><span class="nx">ReadSingleChirp</span><span class="p">)</span><span class="w"> </span><span class="nx">Event</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkerContext</span><span class="p">[</span><span class="nx">ReadSingleChirpContext</span><span class="p">])</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">SampleFromExisting</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span>
+<span class="w">  </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Data</span><span class="p">.</span><span class="nx">stmt</span><span class="p">.</span><span class="nx">Execute</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">err</span>
+<span class="p">}</span>
 
-<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="o">*</span><span class="nx">ReadSingleChirp</span><span class="p">)</span><span class="w"> </span><span class="nx">NewContextData</span><span class="p">(</span><span class="nx">conn</span><span class="w"> </span><span class="o">*</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Connection</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="nx">ReadSingleChirpContext</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="kd">var</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="kt">error</span><span class="w"></span>
-<span class="w">  </span><span class="nx">ctx</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ReadSingleChirpContext</span><span class="p">{}</span><span class="w"></span>
-<span class="w">  </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">stmt</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">conn</span><span class="p">.</span><span class="nx">Prepare</span><span class="p">(</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;SELECT * FROM %s WHERE id = ?&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Name</span><span class="p">))</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="o">*</span><span class="nx">ReadSingleChirp</span><span class="p">)</span><span class="w"> </span><span class="nx">NewContextData</span><span class="p">(</span><span class="nx">conn</span><span class="w"> </span><span class="o">*</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Connection</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="nx">ReadSingleChirpContext</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">var</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="kt">error</span>
+<span class="w">  </span><span class="nx">ctx</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ReadSingleChirpContext</span><span class="p">{}</span>
+<span class="w">  </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">stmt</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">conn</span><span class="p">.</span><span class="nx">Prepare</span><span class="p">(</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;SELECT * FROM %s WHERE id = ?&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Name</span><span class="p">))</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span>
+<span class="p">}</span>
 
-<span class="kd">func</span><span class="w"> </span><span class="nx">NewReadSingleChirp</span><span class="p">(</span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="p">)</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">AbstractWorkload</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="nx">workloadInterface</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">ReadSingleChirp</span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="nx">WorkloadConfig</span><span class="p">:</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="nx">Name</span><span class="p">:</span><span class="w">          </span><span class="s">&quot;ReadSingleChirp&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="nx">WorkloadScale</span><span class="p">:</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="p">},</span><span class="w"></span>
-<span class="w">    </span><span class="nx">table</span><span class="p">:</span><span class="w"> </span><span class="nx">table</span><span class="p">,</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="kd">func</span><span class="w"> </span><span class="nx">NewReadSingleChirp</span><span class="p">(</span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="p">)</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">AbstractWorkload</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">workloadInterface</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">ReadSingleChirp</span><span class="p">{</span>
+<span class="w">    </span><span class="nx">WorkloadConfig</span><span class="p">:</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span><span class="p">{</span>
+<span class="w">      </span><span class="nx">Name</span><span class="p">:</span><span class="w">          </span><span class="s">&quot;ReadSingleChirp&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">WorkloadScale</span><span class="p">:</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">table</span><span class="p">:</span><span class="w"> </span><span class="nx">table</span><span class="p">,</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewWorkload</span><span class="p">[</span><span class="nx">ReadSingleChirpContext</span><span class="p">](</span><span class="nx">workloadInterface</span><span class="p">)</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewWorkload</span><span class="p">[</span><span class="nx">ReadSingleChirpContext</span><span class="p">](</span><span class="nx">workloadInterface</span><span class="p">)</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>The custom context data for this workload is the struct
@@ -396,7 +396,7 @@ data races, it is required to store states such as the <code class="docutils lit
 objects like <code class="docutils literal notranslate"><span class="pre">ReadSingleChirpContext</span></code> to ensure the <code class="docutils literal notranslate"><span class="pre">Event</span></code> function is
 <a class="reference external" href="https://en.wikipedia.org/wiki/Reentrancy_(computing)">reentrant</a>.</p>
 <p>The other interesting line in this workload is:</p>
-<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">SampleFromExisting</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span><span class="w"></span>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">SampleFromExisting</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#Table.SampleFromExisting">method</a>
@@ -413,48 +413,48 @@ function parameterized by the <code class="docutils literal notranslate"><span c
 <h3><code class="docutils literal notranslate"><span class="pre">InsertChirp</span></code><a class="headerlink" href="#insertchirp" title="Permalink to this heading">¶</a></h3>
 <p>The last workload we will implement is one where we insert new chirps. This is
 implemented in the <code class="docutils literal notranslate"><span class="pre">workload_insert_chirp.go</span></code> file.</p>
-<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w"></span>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
-<span class="w">  </span><span class="s">&quot;fmt&quot;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="s">&quot;fmt&quot;</span>
 
-<span class="w">  </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span><span class="w"></span>
-<span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span>
+<span class="p">)</span>
 
-<span class="kd">type</span><span class="w"> </span><span class="nx">InsertChirp</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span><span class="w"></span>
-<span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span><span class="w"></span>
-<span class="w">  </span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="kd">type</span><span class="w"> </span><span class="nx">InsertChirp</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span>
+<span class="w">  </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span>
+<span class="w">  </span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span>
+<span class="p">}</span>
 
-<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="o">*</span><span class="nx">InsertChirp</span><span class="p">)</span><span class="w"> </span><span class="nx">Event</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkerContext</span><span class="p">[</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span><span class="p">])</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="nx">query</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;INSERT INTO %s VALUES (?, ?, ?)&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="nx">id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="nx">content</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;content&quot;</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="nx">createdAt</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;created_at&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="o">*</span><span class="nx">InsertChirp</span><span class="p">)</span><span class="w"> </span><span class="nx">Event</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkerContext</span><span class="p">[</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span><span class="p">])</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">query</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;INSERT INTO %s VALUES (?, ?, ?)&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span>
+<span class="w">  </span><span class="nx">id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span>
+<span class="w">  </span><span class="nx">content</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;content&quot;</span><span class="p">)</span>
+<span class="w">  </span><span class="nx">createdAt</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;created_at&quot;</span><span class="p">)</span>
 
-<span class="w">  </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Conn</span><span class="p">.</span><span class="nx">Execute</span><span class="p">(</span><span class="nx">query</span><span class="p">,</span><span class="w"> </span><span class="nx">id</span><span class="p">,</span><span class="w"> </span><span class="nx">content</span><span class="p">,</span><span class="w"> </span><span class="nx">createdAt</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">err</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Conn</span><span class="p">.</span><span class="nx">Execute</span><span class="p">(</span><span class="nx">query</span><span class="p">,</span><span class="w"> </span><span class="nx">id</span><span class="p">,</span><span class="w"> </span><span class="nx">content</span><span class="p">,</span><span class="w"> </span><span class="nx">createdAt</span><span class="p">)</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">err</span>
+<span class="p">}</span>
 
-<span class="kd">func</span><span class="w"> </span><span class="nx">NewInsertChirp</span><span class="p">(</span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="p">)</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">AbstractWorkload</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="nx">workloadInterface</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">ReadLatestChirps</span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="nx">WorkloadConfig</span><span class="p">:</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="nx">Name</span><span class="p">:</span><span class="w">          </span><span class="s">&quot;InsertChirp&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="nx">WorkloadScale</span><span class="p">:</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="p">},</span><span class="w"></span>
-<span class="w">    </span><span class="nx">table</span><span class="p">:</span><span class="w"> </span><span class="nx">table</span><span class="p">,</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="kd">func</span><span class="w"> </span><span class="nx">NewInsertChirp</span><span class="p">(</span><span class="nx">table</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Table</span><span class="p">)</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">AbstractWorkload</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">workloadInterface</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">ReadLatestChirps</span><span class="p">{</span>
+<span class="w">    </span><span class="nx">WorkloadConfig</span><span class="p">:</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">WorkloadConfig</span><span class="p">{</span>
+<span class="w">      </span><span class="nx">Name</span><span class="p">:</span><span class="w">          </span><span class="s">&quot;InsertChirp&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">WorkloadScale</span><span class="p">:</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">table</span><span class="p">:</span><span class="w"> </span><span class="nx">table</span><span class="p">,</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewWorkload</span><span class="p">[</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span><span class="p">](</span><span class="nx">workloadInterface</span><span class="p">)</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewWorkload</span><span class="p">[</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NoContextData</span><span class="p">](</span><span class="nx">workloadInterface</span><span class="p">)</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>This is very similar to <a class="reference internal" href="#readlatestchirps">ReadLatestChirps</a>. The only difference is that we
 have these lines in the <code class="docutils literal notranslate"><span class="pre">Event()</span></code> function:</p>
-<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="nx">id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span><span class="w"></span>
-<span class="nx">content</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;content&quot;</span><span class="p">)</span><span class="w"></span>
-<span class="nx">createdAt</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;created_at&quot;</span><span class="p">)</span><span class="w"></span>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="nx">id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span>
+<span class="nx">content</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;content&quot;</span><span class="p">)</span>
+<span class="nx">createdAt</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">w</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">Generate</span><span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Rand</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;created_at&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>These lines generate new values for insertion into the database, for the
@@ -480,46 +480,46 @@ must pass these objects to <a class="reference external" href="https://pkg.go.de
 benchmark.</p></li>
 </ul>
 <p>We create a struct that satisfies this interface in the <code class="docutils literal notranslate"><span class="pre">benchmark.go</span></code> file:</p>
-<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w"></span>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span>
 
-<span class="kd">type</span><span class="w"> </span><span class="nx">ChirpBench</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="o">*</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">BenchmarkConfig</span><span class="w"></span>
+<span class="kd">type</span><span class="w"> </span><span class="nx">ChirpBench</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="o">*</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">BenchmarkConfig</span>
 
-<span class="w">  </span><span class="nx">InitialNumRows</span><span class="w"> </span><span class="kt">int64</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="nx">InitialNumRows</span><span class="w"> </span><span class="kt">int64</span>
+<span class="p">}</span>
 
-<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">b</span><span class="w"> </span><span class="nx">ChirpBench</span><span class="p">)</span><span class="w"> </span><span class="nx">Name</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;ChirpBench&quot;</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">b</span><span class="w"> </span><span class="nx">ChirpBench</span><span class="p">)</span><span class="w"> </span><span class="nx">Name</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;ChirpBench&quot;</span>
+<span class="p">}</span>
 
-<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">b</span><span class="w"> </span><span class="nx">ChirpBench</span><span class="p">)</span><span class="w"> </span><span class="nx">RunLoader</span><span class="p">()</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="nx">idGen</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewAutoIncrementGenerator</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="nx">table</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">NewTableChirps</span><span class="p">(</span><span class="nx">idGen</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="nx">table</span><span class="p">.</span><span class="nx">ReloadData</span><span class="p">(</span><span class="w"></span>
-<span class="w">    </span><span class="nx">b</span><span class="p">.</span><span class="nx">BenchmarkConfig</span><span class="p">.</span><span class="nx">DatabaseConfig</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="nx">b</span><span class="p">.</span><span class="nx">InitialNumRows</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="mi">200</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="nx">b</span><span class="p">.</span><span class="nx">BenchmarkConfig</span><span class="p">.</span><span class="nx">RateControlConfig</span><span class="p">.</span><span class="nx">Concurrency</span><span class="p">,</span><span class="w"></span>
-<span class="w">  </span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">b</span><span class="w"> </span><span class="nx">ChirpBench</span><span class="p">)</span><span class="w"> </span><span class="nx">RunLoader</span><span class="p">()</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">idGen</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewAutoIncrementGenerator</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">  </span><span class="nx">table</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">NewTableChirps</span><span class="p">(</span><span class="nx">idGen</span><span class="p">)</span>
+<span class="w">  </span><span class="nx">table</span><span class="p">.</span><span class="nx">ReloadData</span><span class="p">(</span>
+<span class="w">    </span><span class="nx">b</span><span class="p">.</span><span class="nx">BenchmarkConfig</span><span class="p">.</span><span class="nx">DatabaseConfig</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">b</span><span class="p">.</span><span class="nx">InitialNumRows</span><span class="p">,</span>
+<span class="w">    </span><span class="mi">200</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">b</span><span class="p">.</span><span class="nx">BenchmarkConfig</span><span class="p">.</span><span class="nx">RateControlConfig</span><span class="p">.</span><span class="nx">Concurrency</span><span class="p">,</span>
+<span class="w">  </span><span class="p">)</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span>
+<span class="p">}</span>
 
-<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">b</span><span class="w"> </span><span class="nx">ChirpBench</span><span class="p">)</span><span class="w"> </span><span class="nx">Workloads</span><span class="p">()</span><span class="w"> </span><span class="p">([]</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">AbstractWorkload</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="nx">idGen</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewAutoIncrementGeneratorFromDatabase</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">BenchmarkConfig</span><span class="p">.</span><span class="nx">DatabaseConfig</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;chirps&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">b</span><span class="w"> </span><span class="nx">ChirpBench</span><span class="p">)</span><span class="w"> </span><span class="nx">Workloads</span><span class="p">()</span><span class="w"> </span><span class="p">([]</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">AbstractWorkload</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">idGen</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewAutoIncrementGeneratorFromDatabase</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">BenchmarkConfig</span><span class="p">.</span><span class="nx">DatabaseConfig</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;chirps&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="nx">table</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">NewTableChirps</span><span class="p">(</span><span class="nx">idGen</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="nx">table</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">NewTableChirps</span><span class="p">(</span><span class="nx">idGen</span><span class="p">)</span>
 
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">[]</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">AbstractWorkload</span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="nx">NewReadLatestChirps</span><span class="p">(</span><span class="nx">table</span><span class="p">),</span><span class="w"></span>
-<span class="w">    </span><span class="nx">NewReadSingleChirp</span><span class="p">(</span><span class="nx">table</span><span class="p">),</span><span class="w"></span>
-<span class="w">    </span><span class="nx">NewInsertChirp</span><span class="p">(</span><span class="nx">table</span><span class="p">),</span><span class="w"></span>
-<span class="w">  </span><span class="p">},</span><span class="w"> </span><span class="kc">nil</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">[]</span><span class="nx">mybench</span><span class="p">.</span><span class="nx">AbstractWorkload</span><span class="p">{</span>
+<span class="w">    </span><span class="nx">NewReadLatestChirps</span><span class="p">(</span><span class="nx">table</span><span class="p">),</span>
+<span class="w">    </span><span class="nx">NewReadSingleChirp</span><span class="p">(</span><span class="nx">table</span><span class="p">),</span>
+<span class="w">    </span><span class="nx">NewInsertChirp</span><span class="p">(</span><span class="nx">table</span><span class="p">),</span>
+<span class="w">  </span><span class="p">},</span><span class="w"> </span><span class="kc">nil</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>The struct <code class="docutils literal notranslate"><span class="pre">ChirpBench</span></code> implements three out of the four methods above
@@ -550,7 +550,7 @@ specified in <code class="docutils literal notranslate"><span class="pre">mybenc
 to take the <code class="docutils literal notranslate"><span class="pre">id</span></code> data generator as an argument, we need to pass it in. During
 the initial loading of the data we need to start generating <code class="docutils literal notranslate"><span class="pre">id</span></code>s starting
 from 1. Thus, we create the <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#AutoIncrementGenerator"><code class="docutils literal notranslate"><span class="pre">mybench.AutoIncrementGenerator</span></code></a> via:</p>
-<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="nx">idGen</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewAutoIncrementGenerator</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="nx">idGen</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewAutoIncrementGenerator</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The first argument, <code class="docutils literal notranslate"><span class="pre">min</span></code>, specifies the minimum number that the
@@ -578,7 +578,7 @@ place them in a slice of <code class="docutils literal notranslate"><span class=
 Once again, we need to define the <code class="docutils literal notranslate"><span class="pre">id</span></code> data generator, as it is not defined
 by the <code class="docutils literal notranslate"><span class="pre">NewTableChirps</span></code> function. In this case, we create the
 <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#AutoIncrementGenerator"><code class="docutils literal notranslate"><span class="pre">mybench.AutoIncrementGenerator</span></code></a> via:</p>
-<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="nx">idGen</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewAutoIncrementGeneratorFromDatabase</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">BenchmarkConfig</span><span class="p">.</span><span class="nx">DatabaseConfig</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;chirps&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span><span class="w"></span>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="nx">idGen</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewAutoIncrementGeneratorFromDatabase</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">BenchmarkConfig</span><span class="p">.</span><span class="nx">DatabaseConfig</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;chirps&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This method will query the database and determine the minimum and maximum
@@ -597,26 +597,26 @@ generate suitable <code class="docutils literal notranslate"><span class="pre">i
 <span id="putting-it-together-in-main"></span><h2>Putting it all together in <code class="docutils literal notranslate"><span class="pre">main()</span></code><a class="headerlink" href="#putting-it-all-together-in-main" title="Permalink to this heading">¶</a></h2>
 <p>Lastly, we need to call <a class="reference external" href="https://pkg.go.dev/github.com/Shopify/mybench#Run"><code class="docutils literal notranslate"><span class="pre">mybench.Run</span></code></a> in a <code class="docutils literal notranslate"><span class="pre">main()</span></code> function. To do this, we
 define the <code class="docutils literal notranslate"><span class="pre">main.go</span></code> file:</p>
-<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w"></span>
+<div class="highlight-go notranslate"><div class="highlight"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
-<span class="w">  </span><span class="s">&quot;flag&quot;</span><span class="w"></span>
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="s">&quot;flag&quot;</span>
 
-<span class="w">  </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span><span class="w"></span>
-<span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="s">&quot;github.com/Shopify/mybench&quot;</span>
+<span class="p">)</span>
 
-<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="nx">benchmarkInterface</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ChirpBench</span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="nx">BenchmarkConfig</span><span class="p">:</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewBenchmarkConfig</span><span class="p">(),</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="nx">flag</span><span class="p">.</span><span class="nx">Int64Var</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">benchmarkInterface</span><span class="p">.</span><span class="nx">InitialNumRows</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;numrows&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="nx">_000_000</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;the number of rows to load into the database&quot;</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="nx">flag</span><span class="p">.</span><span class="nx">Parse</span><span class="p">()</span><span class="w"></span>
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">benchmarkInterface</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ChirpBench</span><span class="p">{</span>
+<span class="w">    </span><span class="nx">BenchmarkConfig</span><span class="p">:</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">NewBenchmarkConfig</span><span class="p">(),</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="nx">flag</span><span class="p">.</span><span class="nx">Int64Var</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">benchmarkInterface</span><span class="p">.</span><span class="nx">InitialNumRows</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;numrows&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="nx">_000_000</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;the number of rows to load into the database&quot;</span><span class="p">)</span>
+<span class="w">  </span><span class="nx">flag</span><span class="p">.</span><span class="nx">Parse</span><span class="p">()</span>
 
-<span class="w">  </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Run</span><span class="p">(</span><span class="nx">benchmarkInterface</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">mybench</span><span class="p">.</span><span class="nx">Run</span><span class="p">(</span><span class="nx">benchmarkInterface</span><span class="p">)</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>In the <code class="docutils literal notranslate"><span class="pre">main()</span></code> function, we first create the <code class="docutils literal notranslate"><span class="pre">ChirpBench</span></code> object. The
@@ -636,13 +636,13 @@ line.</p>
 <section id="running-the-benchmark">
 <h2>Running the benchmark<a class="headerlink" href="#running-the-benchmark" title="Permalink to this heading">¶</a></h2>
 <p>First we must build the benchmark that we developed:</p>
-<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>go build -o tutorialbench .
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>go<span class="w"> </span>build<span class="w"> </span>-o<span class="w"> </span>tutorialbench<span class="w"> </span>.
 </pre></div>
 </div>
 <p>We can then run the loader to initialize the database. You’ll need to replace
 the value for <code class="docutils literal notranslate"><span class="pre">-host</span></code>, <code class="docutils literal notranslate"><span class="pre">-user</span></code>, and <code class="docutils literal notranslate"><span class="pre">-pass</span></code> to your database’s
 configuration.</p>
-<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -load
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>./tutorialbench<span class="w"> </span>-host<span class="w"> </span>mysql-57.local<span class="w"> </span>-user<span class="w"> </span>sys.admin_rw<span class="w"> </span>-pass<span class="w"> </span>hunter2<span class="w"> </span>-load
 <span class="go">INFO[0000] reloading data                                batchSize=200 concurrency=16 table=chirps totalrows=10000000</span>
 <span class="go">INFO[0000] loading data                                  pct=0 rowsInserted=200 table=chirps totalrows=10000000</span>
 <span class="go">INFO[0000] loading data                                  pct=1 rowsInserted=100400 table=chirps totalrows=10000000</span>
@@ -652,7 +652,7 @@ configuration.</p>
 </pre></div>
 </div>
 <p>To run the actual benchmark:</p>
-<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -bench
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>./tutorialbench<span class="w"> </span>-host<span class="w"> </span>mysql-57.local<span class="w"> </span>-user<span class="w"> </span>sys.admin_rw<span class="w"> </span>-pass<span class="w"> </span>hunter2<span class="w"> </span>-bench
 <span class="go">INFO[0000] running benchmark indefinitely</span>
 <span class="go">INFO[0000] starting benchmark workers                    concurrency=1 rate=50 workload=InsertChirp</span>
 <span class="go">INFO[0000] starting benchmark workers                    concurrency=2 rate=200 workload=ReadSingleChirp</span>
@@ -666,13 +666,13 @@ that runs the benchmark for 2 minutes each with incrementing event rate. The
 goal is to observe when the database can no longer handle the desired event
 rate. We can save this script to <code class="docutils literal notranslate"><span class="pre">benchmark.sh</span></code>.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
-./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -load
-./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -bench -duration 2m -eventrate <span class="m">3500</span>
-./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -bench -duration 2m -eventrate <span class="m">4000</span>
-./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -bench -duration 2m -eventrate <span class="m">4500</span>
-./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -bench -duration 2m -eventrate <span class="m">5000</span>
-./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -bench -duration 2m -eventrate <span class="m">5500</span>
-./tutorialbench -host mysql-57.local -user sys.admin_rw -pass hunter2 -bench -duration 2m -eventrate <span class="m">6000</span>
+./tutorialbench<span class="w"> </span>-host<span class="w"> </span>mysql-57.local<span class="w"> </span>-user<span class="w"> </span>sys.admin_rw<span class="w"> </span>-pass<span class="w"> </span>hunter2<span class="w"> </span>-load
+./tutorialbench<span class="w"> </span>-host<span class="w"> </span>mysql-57.local<span class="w"> </span>-user<span class="w"> </span>sys.admin_rw<span class="w"> </span>-pass<span class="w"> </span>hunter2<span class="w"> </span>-bench<span class="w"> </span>-duration<span class="w"> </span>2m<span class="w"> </span>-eventrate<span class="w"> </span><span class="m">3500</span>
+./tutorialbench<span class="w"> </span>-host<span class="w"> </span>mysql-57.local<span class="w"> </span>-user<span class="w"> </span>sys.admin_rw<span class="w"> </span>-pass<span class="w"> </span>hunter2<span class="w"> </span>-bench<span class="w"> </span>-duration<span class="w"> </span>2m<span class="w"> </span>-eventrate<span class="w"> </span><span class="m">4000</span>
+./tutorialbench<span class="w"> </span>-host<span class="w"> </span>mysql-57.local<span class="w"> </span>-user<span class="w"> </span>sys.admin_rw<span class="w"> </span>-pass<span class="w"> </span>hunter2<span class="w"> </span>-bench<span class="w"> </span>-duration<span class="w"> </span>2m<span class="w"> </span>-eventrate<span class="w"> </span><span class="m">4500</span>
+./tutorialbench<span class="w"> </span>-host<span class="w"> </span>mysql-57.local<span class="w"> </span>-user<span class="w"> </span>sys.admin_rw<span class="w"> </span>-pass<span class="w"> </span>hunter2<span class="w"> </span>-bench<span class="w"> </span>-duration<span class="w"> </span>2m<span class="w"> </span>-eventrate<span class="w"> </span><span class="m">5000</span>
+./tutorialbench<span class="w"> </span>-host<span class="w"> </span>mysql-57.local<span class="w"> </span>-user<span class="w"> </span>sys.admin_rw<span class="w"> </span>-pass<span class="w"> </span>hunter2<span class="w"> </span>-bench<span class="w"> </span>-duration<span class="w"> </span>2m<span class="w"> </span>-eventrate<span class="w"> </span><span class="m">5500</span>
+./tutorialbench<span class="w"> </span>-host<span class="w"> </span>mysql-57.local<span class="w"> </span>-user<span class="w"> </span>sys.admin_rw<span class="w"> </span>-pass<span class="w"> </span>hunter2<span class="w"> </span>-bench<span class="w"> </span>-duration<span class="w"> </span>2m<span class="w"> </span>-eventrate<span class="w"> </span><span class="m">6000</span>
 </pre></div>
 </div>
 <p>In this script, we first reload the data so the database can have a fresh
@@ -680,7 +680,7 @@ start, then we run <code class="docutils literal notranslate"><span class="pre">
 3500 and end at an event rate of 6000. Each benchmark has a duration of 2
 minutes.</p>
 <p>To run this script:</p>
-<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>rm -f data.sqlite
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>rm<span class="w"> </span>-f<span class="w"> </span>data.sqlite
 <span class="gp">$ </span>./benchmark.sh
 </pre></div>
 </div>
