@@ -2,6 +2,7 @@ package mybench
 
 import (
 	"context"
+	"sync"
 	"time"
 )
 
@@ -72,10 +73,11 @@ func NewBenchmarkWorker[ContextDataT any](workloadIface WorkloadInterface[Contex
 	return worker, nil
 }
 
-func (b *BenchmarkWorker[ContextDataT]) Run(ctx context.Context, startTime time.Time, databaseConfig DatabaseConfig, rateControlConfig RateControlConfig) error {
+func (b *BenchmarkWorker[ContextDataT]) Run(ctx context.Context, workerInitializationWg *sync.WaitGroup, startTime time.Time, databaseConfig DatabaseConfig, rateControlConfig RateControlConfig) error {
 	// TODO: kind of weird that the conn is opened in NewBenchmarkWorker but closed here. This should maybe be fixed
 	defer b.context.Conn.Close()
 	b.onlineHist = NewOnlineHistogram(startTime)
+	workerInitializationWg.Done()
 	return b.looper.Run(ctx)
 }
 
