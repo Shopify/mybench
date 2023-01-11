@@ -10,6 +10,7 @@ mybench is a high-performance framework for rapid prototyping of benchmarks.
    introduction
    getting-started
    writing-a-benchmark
+   eventrate-and-concurrency-control
    detailed-design-doc
 
 

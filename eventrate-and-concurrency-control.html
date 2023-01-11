@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Event rate and concurrency control &#8212; mybench  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Detailed design documentation" href="detailed-design-doc.html" />
+    <link rel="prev" title="Tutorial: Writing and running a custom benchmark" href="writing-a-benchmark.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="event-rate-and-concurrency-control">
+<span id="eventrate-and-concurrency-control"></span><h1>Event rate and concurrency control<a class="headerlink" href="#event-rate-and-concurrency-control" title="Permalink to this heading">¶</a></h1>
+<p>To achieve high total event rate, mybench utilizes a large number of concurrent
+benchmark workers (via goroutines). To achieve thousands of events per second
+per benchmark worker, the events are executed in batches in a relatively-slow
+“outer” loop (See rate control section in <a class="reference internal" href="detailed-design-doc.html#detailed-design-doc"><span class="std std-ref">Detailed design documentation</span></a> for more
+details). The number of benchmark workers and the event execution loops can be
+controlled via the following parameters:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-eventrate</span></code>: specifies the total event rate of the benchmark in Hz.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-concurrency</span></code>: specifies the number of benchmark workers to use.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-workermaxrate</span></code>: specifies the max event rate of a worker so that
+<code class="docutils literal notranslate"><span class="pre">-concurrency</span></code> can be automatically calculated if not specified.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-outerlooprate</span></code>: specifies the rate at which the “outer” loop runs in Hz.</p></li>
+</ul>
+<p>If none of these arguments are specified, the defaults are: <code class="docutils literal notranslate"><span class="pre">-eventrate</span></code> is
+1000; <code class="docutils literal notranslate"><span class="pre">-concurrency</span></code> is automatically determined based on <code class="docutils literal notranslate"><span class="pre">-workermaxrate</span></code>,
+which by default is 100; and <code class="docutils literal notranslate"><span class="pre">-outerlooprate</span></code> is 50.</p>
+<p>This document will go through a few common examples of how to tune these
+parameters.</p>
+<section id="specifying-only-eventrate">
+<h2>Specifying only <code class="docutils literal notranslate"><span class="pre">-eventrate</span></code><a class="headerlink" href="#specifying-only-eventrate" title="Permalink to this heading">¶</a></h2>
+<p>In most cases, only <code class="docutils literal notranslate"><span class="pre">-eventrate</span></code> is needed. The number of benchmark workers
+is automatically determined based on the value of <code class="docutils literal notranslate"><span class="pre">-workermaxrate</span></code>, which is
+by default 100, with the formula <code class="docutils literal notranslate"><span class="pre">concurrency</span> <span class="pre">=</span> <span class="pre">ceiling(eventrate</span> <span class="pre">/</span>
+<span class="pre">workermaxrate)</span></code>. Since the total event rate is spread between multiple
+workloads according to the specified <code class="docutils literal notranslate"><span class="pre">WorkloadConfig.WorkloadScale</span></code>, the
+calculated concurrency number may be greater than the value above if there are
+multiple workloads, as all workloads must have at least 1 benchmark worker, and
+the each workload will perform its own round-up operation when determining its
+own concurrency.</p>
+<p>For illustrative purposes, for a single-workload benchmark, here are some
+examples of:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">-eventrate</span></code></p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">-workermaxrate</span></code></p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">-concurrency</span></code> (auto calculated)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>10000</p></td>
+<td><p>default (100)</p></td>
+<td><p>100</p></td>
+</tr>
+<tr class="row-odd"><td><p>35000</p></td>
+<td><p>default (100)</p></td>
+<td><p>350</p></td>
+</tr>
+<tr class="row-even"><td><p>35001</p></td>
+<td><p>500</p></td>
+<td><p>71</p></td>
+</tr>
+</tbody>
+</table>
+<p>Adjustment to <code class="docutils literal notranslate"><span class="pre">-workermaxrate</span></code> may be important if the default value of 100
+event/s/worker is not sufficient to fully utilize the target database.</p>
+</section>
+<section id="specifying-eventrate-and-concurrency">
+<h2>Specifying <code class="docutils literal notranslate"><span class="pre">-eventrate</span></code> and <code class="docutils literal notranslate"><span class="pre">-concurrency</span></code><a class="headerlink" href="#specifying-eventrate-and-concurrency" title="Permalink to this heading">¶</a></h2>
+<p>In some situations, it may be desirable to fix the number of benchmark workers
+to use. For example, one may wish to fix the number of concurrent connections
+used against the database. In these cases, <code class="docutils literal notranslate"><span class="pre">-eventrate</span></code> and <code class="docutils literal notranslate"><span class="pre">-concurrency</span></code>
+can be both specified. If <code class="docutils literal notranslate"><span class="pre">-concurrency</span></code> is specified, the value of
+<code class="docutils literal notranslate"><span class="pre">-workermaxrate</span></code> is ignored.</p>
+</section>
+<section id="advanced-changing-outerlooprate">
+<h2>Advanced: changing <code class="docutils literal notranslate"><span class="pre">-outerlooprate</span></code><a class="headerlink" href="#advanced-changing-outerlooprate" title="Permalink to this heading">¶</a></h2>
+<p>Mybench batches events in a slow-running outer loop to maximize throughput. By
+default, the <code class="docutils literal notranslate"><span class="pre">-outerlooprate</span></code> is set to 50. If a benchmark worker’s event
+rate is set to 100, then 100 / 50 = 2 <code class="docutils literal notranslate"><span class="pre">Event()</span></code> calls are made per outer-loop
+iteration. If <code class="docutils literal notranslate"><span class="pre">-outerlooprate</span></code> is changed to 25, then 4 <code class="docutils literal notranslate"><span class="pre">Event()</span></code> calls are
+made per outer-loop iteration.</p>
+<p>Tuning this variable may be useful if the behavior of the looper is erratic
+independent of the database, although it is not guaranteed that this is the
+root of the problem. Generally this value should not exceed 100-200, as Linux
+and Golang’s scheduler is unlikely to be able to maintain a constant 100-200
+Hz. The per-benchmark-worker event rate (calculated from the total
+<code class="docutils literal notranslate"><span class="pre">-eventrate</span></code> by mybench) should be divisible by the <code class="docutils literal notranslate"><span class="pre">-outerlooprate</span></code>. If it
+is not divisible, the looper may not run steadily and may experience
+oscillations around the desired rates due to discretization errors.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">mybench</a></h1>
+
+
+
+<p class="blurb">A high-performance framework for rapid prototyping of benchmarks</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=Shopify&repo=mybench&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">What is mybench?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="writing-a-benchmark.html">Tutorial: Writing and running a custom benchmark</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Event rate and concurrency control</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#specifying-only-eventrate">Specifying only <code class="docutils literal notranslate"><span class="pre">-eventrate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#specifying-eventrate-and-concurrency">Specifying <code class="docutils literal notranslate"><span class="pre">-eventrate</span></code> and <code class="docutils literal notranslate"><span class="pre">-concurrency</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#advanced-changing-outerlooprate">Advanced: changing <code class="docutils literal notranslate"><span class="pre">-outerlooprate</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="detailed-design-doc.html">Detailed design documentation</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="writing-a-benchmark.html" title="previous chapter">Tutorial: Writing and running a custom benchmark</a></li>
+      <li>Next: <a href="detailed-design-doc.html" title="next chapter">Detailed design documentation</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022 - Present, Shopify Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/eventrate-and-concurrency-control.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
