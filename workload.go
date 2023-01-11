@@ -2,6 +2,7 @@ package mybench
 
 import (
 	"context"
+	"math"
 	"sync"
 	"time"
 
@@ -27,6 +28,14 @@ type RateControlConfig struct {
 
 	// The type of looper used. Default to Uniform looper.
 	LooperType LooperType
+
+	// If set, per-workload event rate will not be rounded to the nearest
+	// integer. Per-workload event rate is rounded because the total event rate
+	// as specified by EventRate is multiplied by WorkloadScale. This floating
+	// point calculation can result in numbers like 27839.999999999996.
+	// Maintaining such a precise value is difficult for the looper, which can
+	// cause erratic looking results.
+	DoNotRoundEventRate bool
 }
 
 type VisualizationConfig struct {
@@ -214,6 +223,10 @@ func NewWorkload[ContextDataT any](workloadIface WorkloadInterface[ContextDataT]
 func (w *Workload[ContextDataT]) FinishInitialization(databaseConfig DatabaseConfig, rateControlConfig RateControlConfig) {
 	w.databaseConfig = databaseConfig
 	w.rateControlConfig = rateControlConfig
+
+	if !w.rateControlConfig.DoNotRoundEventRate {
+		w.rateControlConfig.EventRate = math.RoundToEven(w.rateControlConfig.EventRate)
+	}
 }
 
 func (w *Workload[ContextDataT]) Run(ctx context.Context, workerInitializationWg *sync.WaitGroup, startTime time.Time) {
