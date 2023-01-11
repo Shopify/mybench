@@ -60,7 +60,7 @@ Specifying ``-eventrate`` and ``-concurrency``
 ----------------------------------------------
 
 In some situations, it may be desirable to fix the number of benchmark workers
-to use. For example, one may wish to fix the number of concurrent connection
+to use. For example, one may wish to fix the number of concurrent connections
 used against the database. In these cases, ``-eventrate`` and ``-concurrency``
 can be both specified. If ``-concurrency`` is specified, the value of
 ``-workermaxrate`` is ignored.
