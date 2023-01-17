@@ -2,8 +2,10 @@ package mybench
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"math/rand"
+	"runtime/trace"
 	"time"
 )
 
@@ -48,11 +50,13 @@ const (
 )
 
 type DiscretizedLooper struct {
-	EventRate     float64
-	OuterLoopRate float64
-	LooperType    LooperType
+	EventRate       float64
+	OuterLoopRate   float64
+	LooperType      LooperType
+	DebugIdentifier string
 
-	Event          func() error
+	// The context passed is a trace context from runtime/trace package
+	Event          func(context.Context) error
 	TraceEvent     func(EventStat)
 	TraceOuterLoop func(OuterLoopStat)
 
@@ -67,6 +71,11 @@ func (l *DiscretizedLooper) Run(ctx context.Context) error {
 	eventBatchSize := int64(0)
 	executedNumberOfEvents := int64(0)
 
+	// Create the task name outside the loop as doing it in the loop will cause
+	// allocations and therefore slow down performance of the loop.
+	traceTaskName := fmt.Sprintf("OuterLoopIteration%s", l.DebugIdentifier)
+	eventRegionName := fmt.Sprintf("Event%s", l.DebugIdentifier)
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -75,6 +84,9 @@ func (l *DiscretizedLooper) Run(ctx context.Context) error {
 		}
 
 		err := func() error {
+			traceTaskCtx, traceTask := trace.NewTask(ctx, traceTaskName)
+			defer traceTask.End()
+
 			lastWakeupTime := nextWakeupTime
 			actualWakeupTime := time.Now()
 
@@ -146,10 +158,13 @@ func (l *DiscretizedLooper) Run(ctx context.Context) error {
 					eventStart = time.Now()
 				}
 
-				err := l.Event()
+				region := trace.StartRegion(traceTaskCtx, eventRegionName)
+				err := l.Event(traceTaskCtx)
 				if err != nil {
+					region.End()
 					return err
 				}
+				region.End()
 
 				if l.TraceEvent != nil {
 					l.TraceEvent(EventStat{
@@ -174,11 +189,13 @@ func (l *DiscretizedLooper) Run(ctx context.Context) error {
 				l.TraceOuterLoop(outerLoopStat)
 			}
 
+			region := trace.StartRegion(traceTaskCtx, "Sleep")
 			now := time.Now()
 			delta := nextWakeupTime.Sub(now)
 			if delta > time.Duration(0) { // May want to have a positive threshold, but requires looking at the top logic calculating the batch size
 				time.Sleep(delta)
 			}
+			region.End()
 
 			return nil
 		}()

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"runtime/trace"
+
 	"github.com/Shopify/mybench"
 )
 
@@ -58,6 +60,7 @@ func (r *UpdateSimpleTable) Event(ctx mybench.WorkerContext[mybench.NoContextDat
 	args[0] = r.table.Generate(ctx.Rand, "data")
 	args[1] = r.table.SampleFromExisting(ctx.Rand, "id")
 
+	defer trace.StartRegion(ctx.TraceCtx, "UpdateSimpleTableQuery").End()
 	_, err := ctx.Conn.Execute(query, args...)
 	return err
 }
