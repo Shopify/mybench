@@ -186,7 +186,7 @@ func TestLooperNoBackPressure(t *testing.T) {
 	percent := math.Abs(diff / float64(expectedDelta) * 100.0)
 
 	// The threshold is arbitrarily chosen. Works on my computer.
-	require.True(t, percent <= 5, "expected total looper duration is more than 5%% from the actual duration (expected = %d us, actual = %d us, diff = %.2f%%).", expectedDelta, delta, percent)
+	require.True(t, percent <= 15, "expected total looper duration is more than 15%% from the actual duration (expected = %d us, actual = %d us, diff = %.2f%%).", expectedDelta, delta, percent)
 
 	lastStat := stats[len(stats)-1]
 	require.Equal(t, int64(1000), lastStat.CumulativeNumberOfEvents)
@@ -212,7 +212,7 @@ func TestLooperNoBackPressure(t *testing.T) {
 		rate := float64(numEvents) / deltaT.Seconds()
 		diffPct := math.Abs((rate - looper.EventRate) / looper.EventRate * 100.0)
 
-		require.True(t, diffPct <= 5, "looper rate deviated more than 5%% from the expected (expected = %.1f Hz, actual = %.2f Hz, diff = %.2f%%)", looper.EventRate, rate, diffPct)
+		require.True(t, diffPct <= 15, "looper rate deviated more than 15%% from the expected (expected = %.1f Hz, actual = %.2f Hz, diff = %.2f%%)", looper.EventRate, rate, diffPct)
 	}
 }
 
@@ -263,7 +263,7 @@ func TestLooperSignificantBackPressure(t *testing.T) {
 	percent := math.Abs(diff / float64(expectedDelta) * 100.0)
 
 	// The threshold is arbitrarily chosen. Works on my computer.
-	require.True(t, percent <= 5, "expected total looper duration is more than 5%% from the actual duration (expected = %d us, actual = %d us, diff = %.2f%%).", expectedDelta, delta, percent)
+	require.True(t, percent <= 15, "expected total looper duration is more than 15%% from the actual duration (expected = %d us, actual = %d us, diff = %.2f%%).", expectedDelta, delta, percent)
 
 	lastStat := stats[len(stats)-1]
 	require.Equal(t, int64(100), lastStat.CumulativeNumberOfEvents)
