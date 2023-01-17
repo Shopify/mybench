@@ -16,7 +16,7 @@
 Design
 ------
 
-For more details, see [the design doc](./docs/00-mybench-design.rst). Some of the information in this section may eventually move there.
+For more details, see [the design doc](https://shopify.github.io/mybench/detailed-design-doc.html). Some of the information in this section may eventually move there.
 
 There are a few important structs defined in this library, and they are:
 
@@ -53,4 +53,4 @@ Run a benchmark
 Write your own benchmark
 ------------------------
 
-See [benchmarks](./benchmarks) for examples and read the [docs](./docs).
+See [benchmarks](./benchmarks) for examples and read the [docs](https://shopify.github.io/mybench/).
