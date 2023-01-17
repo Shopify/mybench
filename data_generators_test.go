@@ -240,7 +240,7 @@ func TestHistogramCardinalityStringGenerator(t *testing.T) {
 	})
 }
 
-func TestUniformLengthStringGenerator(t *testing.T) {
+func TestVariableLengthUniformStringsGenerator(t *testing.T) {
 	const minLength, maxLength = 3, 6
 	gen := NewUniformLengthStringGenerator(minLength, maxLength)
 	r := newRandForTest()
@@ -260,6 +260,30 @@ func TestUniformLengthStringGenerator(t *testing.T) {
 			3: 33020,
 			4: 33586,
 			5: 33394,
+		}
+
+		require.Equal(t, expectedLengthCount, lengthCount)
+	})
+}
+
+func TestUniformLengthStringsGenerator(t *testing.T) {
+	const minLength, maxLength = 3, 3
+	gen := NewUniformLengthStringGenerator(minLength, maxLength)
+	r := newRandForTest()
+
+	t.Run("Generate", func(t *testing.T) {
+		const n = 100_000
+		lengthCount := map[int]int{}
+
+		for i := 0; i < n; i++ {
+			v, ok := gen.Generate(r).(string)
+			require.True(t, ok, "should be generating string but is not")
+			count := lengthCount[len(v)]
+			lengthCount[len(v)] = count + 1
+		}
+
+		expectedLengthCount := map[int]int{
+			3: 100_000,
 		}
 
 		require.Equal(t, expectedLengthCount, lengthCount)
