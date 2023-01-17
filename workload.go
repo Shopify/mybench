@@ -235,7 +235,7 @@ func (w *Workload[ContextDataT]) Run(ctx context.Context, workerInitializationWg
 	for i := 0; i < w.rateControlConfig.Concurrency; i++ {
 		go func(worker *BenchmarkWorker[ContextDataT]) {
 			defer w.workersWg.Done()
-			err := worker.Run(ctx, workerInitializationWg, startTime, w.databaseConfig, w.rateControlConfig)
+			err := worker.Run(ctx, workerInitializationWg, startTime)
 			if err != nil {
 				w.logger.WithError(err).Panic("failed to run worker")
 			}
