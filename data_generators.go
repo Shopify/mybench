@@ -380,7 +380,10 @@ func (g *UniformLengthStringGenerator) Generate(r *Rand) interface{} {
 }
 
 func (g *UniformLengthStringGenerator) GenerateTyped(r *Rand) string {
-	length := r.UniformInt(int64(g.minLength), int64(g.maxLength))
+	length := int64(g.maxLength)
+	if g.minLength < g.maxLength {
+		length = r.UniformInt(int64(g.minLength), int64(g.maxLength))
+	}
 	buf := make([]byte, length)
 	for i := int64(0); i < length; i++ {
 		buf[i] = characters[r.Intn(len(characters))]
