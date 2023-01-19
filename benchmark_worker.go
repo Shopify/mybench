@@ -27,6 +27,13 @@ type WorkerContext[T any] struct {
 	// User-defined custom data. If no custom data is needed, set T to be
 	// mybench.NoContextData.
 	Data T
+
+	// A context.Context object used for tracing only. The tracing used is
+	// Golang's runtime/trace package. Each Event executed is already in a task
+	// called OuterLoopIteration{WorkloadName}. By the time the Event function is
+	// called, it is done so inside a trace region called `Event`. Nested regions
+	// can be created by the user.
+	TraceCtx context.Context
 }
 
 // A single goroutine worker that loops and benchmarks MySQL
@@ -57,9 +64,12 @@ func NewBenchmarkWorker[ContextDataT any](workloadIface WorkloadInterface[Contex
 	}
 
 	looper := &DiscretizedLooper{
-		EventRate:     rateControlConfig.EventRate / float64(rateControlConfig.Concurrency),
-		OuterLoopRate: rateControlConfig.OuterLoopRate,
-		Event: func() error {
+		EventRate:       rateControlConfig.EventRate / float64(rateControlConfig.Concurrency),
+		OuterLoopRate:   rateControlConfig.OuterLoopRate,
+		DebugIdentifier: workloadIface.Config().Name,
+		Event: func(traceCtx context.Context) error {
+			worker.context.TraceCtx = traceCtx
+			defer func() { worker.context.TraceCtx = nil }()
 			return worker.workloadIface.Event(worker.context)
 		},
 		TraceEvent:     worker.traceEvent,

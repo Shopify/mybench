@@ -158,7 +158,7 @@ func TestLooperNoBackPressure(t *testing.T) {
 	// Don't ant to allocate in the loop, so we allocate plenty of space
 	stats := make([]OuterLoopStat, 0, int(looper.OuterLoopRate*float64(numEvents)/looper.EventRate*10))
 
-	looper.Event = func() error {
+	looper.Event = func(context.Context) error {
 		sleeper.Sleep(1000)
 		return nil
 	}
@@ -231,7 +231,7 @@ func TestLooperSignificantBackPressure(t *testing.T) {
 	// Don't ant to allocate in the loop, so we allocate plenty of space
 	stats := make([]OuterLoopStat, 0, int(looper.OuterLoopRate*float64(numEvents)/looper.EventRate*10))
 
-	looper.Event = func() error {
+	looper.Event = func(context.Context) error {
 		// Want 5 seconds with 100 events means 20 events per seconds or 1/20
 		// seconds per event This means there's significant back pressure and the
 		// looper should switch to the busy loop style, which means the final loop

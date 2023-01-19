@@ -41,7 +41,7 @@ func runLoop(v int64) []mybench.OuterLoopStat {
 	// loop which will significantly increase the size of the logs.
 	stats := make([]mybench.OuterLoopStat, 0, loopDuration*outerLoopRate*50)
 
-	looper.Event = func() error {
+	looper.Event = func(context.Context) error {
 		computePrime(v)
 		return nil
 	}
