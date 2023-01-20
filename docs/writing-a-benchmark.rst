@@ -68,7 +68,7 @@ query, which makes up 75% of the traffic:
 
    SELECT * FROM chirps ORDER BY created_at DESC LIMIT 200
 
-A second workload consists of reading a single chirp based on its ``id``. This query 
+A second workload consists of reading a single chirp based on its ``id``. This query
 makes up 20% of the traffic:
 
 .. code-block:: sql
@@ -559,6 +559,15 @@ shifts higher around 5000 events/s.
 .. _Jupyter Notebook: https://jupyter.org/
 .. _install a conda environment: https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file
 
+---------------------
+Tracing the benchmark
+---------------------
+
+In some situations, you may observe extra high latency periodically which may
+skew the max-latency time series. In these situations, you can trace mybench
+via the ``runtime/trace`` Golang library which is built into mybench. Follow
+`this tutorial <https://github.com/Shopify/mybench/pull/32>`_ for details.
+
 ------
 Review
 ------
@@ -580,6 +589,7 @@ In this tutorial, we have learned to:
 * run the benchmark with varying event rates and duration;
 * perform a sequence of benchmark runs to ascertain the limits of the database;
 * post process the data with Python to visualize a sequence of benchmark runs.
+* trace the benchmark via ``runtime/trace`` and ``go tool trace``.
 
 The code for ``tutorialbench`` can be found `here
 <https://github.com/Shopify/mybench/tree/main/benchmarks/tutorialbench>`__.
