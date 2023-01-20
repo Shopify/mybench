@@ -711,6 +711,13 @@ for the <code class="docutils literal notranslate"><span class="pre">chirps</spa
 desired event rate reaches that point. Additionally, the latency distribution
 shifts higher around 5000 events/s.</p>
 </section>
+<section id="tracing-the-benchmark">
+<h2>Tracing the benchmark<a class="headerlink" href="#tracing-the-benchmark" title="Permalink to this heading">¶</a></h2>
+<p>In some situations, you may observe extra high latency periodically which may
+skew the max-latency time series. In these situations, you can trace mybench
+via the <code class="docutils literal notranslate"><span class="pre">runtime/trace</span></code> Golang library which is built into mybench. Follow
+<a class="reference external" href="https://github.com/Shopify/mybench/pull/32">this tutorial</a> for details.</p>
+</section>
 <section id="review">
 <h2>Review<a class="headerlink" href="#review" title="Permalink to this heading">¶</a></h2>
 <p>In this tutorial, we have learned to:</p>
@@ -730,6 +737,7 @@ command line;</p></li>
 <li><p>run the benchmark with varying event rates and duration;</p></li>
 <li><p>perform a sequence of benchmark runs to ascertain the limits of the database;</p></li>
 <li><p>post process the data with Python to visualize a sequence of benchmark runs.</p></li>
+<li><p>trace the benchmark via <code class="docutils literal notranslate"><span class="pre">runtime/trace</span></code> and <code class="docutils literal notranslate"><span class="pre">go</span> <span class="pre">tool</span> <span class="pre">trace</span></code>.</p></li>
 </ul>
 <p>The code for <code class="docutils literal notranslate"><span class="pre">tutorialbench</span></code> can be found <a class="reference external" href="https://github.com/Shopify/mybench/tree/main/benchmarks/tutorialbench">here</a>.</p>
 </section>
@@ -774,6 +782,7 @@ command line;</p></li>
 <li class="toctree-l2"><a class="reference internal" href="#putting-it-all-together-in-main">Putting it all together in <code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#running-the-benchmark">Running the benchmark</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#post-processing-the-data">Post processing the data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tracing-the-benchmark">Tracing the benchmark</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#review">Review</a></li>
 </ul>
 </li>
