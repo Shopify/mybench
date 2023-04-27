@@ -118,7 +118,7 @@ func (t Table) CreateTableQuery() string {
 }
 
 func (t Table) DropTableQuery() string {
-	return fmt.Sprintf("DROP TABLE IF EXISTS %s", t.Name)
+	return fmt.Sprintf("DROP TABLE IF EXISTS `%s`", t.Name)
 }
 
 func (t Table) InsertQuery(r *Rand, batchSize int, valueOverride map[string]interface{}) (string, []interface{}) {
@@ -126,7 +126,7 @@ func (t Table) InsertQuery(r *Rand, batchSize int, valueOverride map[string]inte
 
 	buf.WriteString(fmt.Sprintf("INSERT INTO `%s` (", t.Name))
 	for i, column := range t.Columns {
-		buf.WriteString(column.Name)
+		buf.WriteString("`" + column.Name + "`")
 		if i < len(t.Columns)-1 {
 			buf.WriteString(",")
 		}
@@ -167,7 +167,7 @@ func (t Table) InsertQueryList(r *Rand, valueOverrides []map[string]interface{})
 
 	buf.WriteString(fmt.Sprintf("INSERT INTO `%s` (", t.Name))
 	for i, column := range t.Columns {
-		buf.WriteString(column.Name)
+		buf.WriteString("`" + column.Name + "`")
 		if i < len(t.Columns)-1 {
 			buf.WriteString(",")
 		}
@@ -268,6 +268,10 @@ func (t Table) ReloadData(databaseConfig DatabaseConfig, totalrows int64, batchS
 				query, args := t.InsertQuery(r, int(batchSize), nil)
 				_, err = conn.Execute(query, args...)
 				if err != nil {
+					logger.WithFields(logrus.Fields{
+						"query": query,
+						"args":  args,
+					}).Error(err)
 					panic(err)
 				}
 			}
