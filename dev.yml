@@ -1,7 +1,7 @@
 name: mybench
 
 up:
-  - go: 1.18.3
+  - go: 1.19.7
   # Why not isogun?  because I was having problems with >10 connections
   - podman
   - custom:
