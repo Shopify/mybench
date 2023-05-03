@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go-mysql-org/go-mysql/client"
+	"github.com/go-mysql-org/go-mysql/mysql"
 )
 
 // The database config object that can be turned into a single connection
@@ -31,6 +32,9 @@ type DatabaseConfig struct {
 	// works with benchmarks that uses the mybench.Connection.GetRoundRobinConnection
 	// function to get their connections and execute queries.
 	ConnectionMultiplier int
+
+	// Enable CLIENT_MULTI_STATEMENTS options on the client
+	ClientMultiStatements bool
 }
 
 // A thin wrapper around https://pkg.go.dev/github.com/go-mysql-org/go-mysql/client#Conn
@@ -45,11 +49,11 @@ type Connection struct {
 }
 
 // Creates a new database if it doesn't exist
-func (c DatabaseConfig) CreateDatabaseIfNeeded() error {
-	addr := fmt.Sprintf("%s:%d", c.Host, c.Port)
-	conn, err := client.Connect(addr, c.User, c.Pass, "")
+func (cfg DatabaseConfig) CreateDatabaseIfNeeded() error {
+	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+	conn, err := client.Connect(addr, cfg.User, cfg.Pass, "")
 	if err == nil {
-		_, err = conn.Execute(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", c.Database))
+		_, err = conn.Execute(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", cfg.Database))
 		conn.Close()
 	}
 
@@ -57,18 +61,24 @@ func (c DatabaseConfig) CreateDatabaseIfNeeded() error {
 }
 
 // Returns a connection object based on the database configuration
-func (c DatabaseConfig) Connection() (*Connection, error) {
-	if c.NoConnection {
+func (cfg DatabaseConfig) Connection() (*Connection, error) {
+	if cfg.NoConnection {
 		return &Connection{}, nil
 	}
-	if c.ConnectionMultiplier == 0 {
-		c.ConnectionMultiplier = 1
+	if cfg.ConnectionMultiplier == 0 {
+		cfg.ConnectionMultiplier = 1
 	}
 
-	addr := fmt.Sprintf("%s:%d", c.Host, c.Port)
-	connList := make([]*client.Conn, c.ConnectionMultiplier)
-	for i := 0; i < c.ConnectionMultiplier; i++ {
-		conn, err := client.Connect(addr, c.User, c.Pass, c.Database)
+	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+	connList := make([]*client.Conn, cfg.ConnectionMultiplier)
+	var options []func(*client.Conn)
+	if cfg.ClientMultiStatements {
+		options = append(options, func(c *client.Conn) {
+			c.SetCapability(mysql.CLIENT_MULTI_STATEMENTS)
+		})
+	}
+	for i := 0; i < cfg.ConnectionMultiplier; i++ {
+		conn, err := client.Connect(addr, cfg.User, cfg.Pass, cfg.Database, options...)
 		if err != nil {
 			return nil, err
 		}

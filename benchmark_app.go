@@ -43,6 +43,7 @@ func NewBenchmarkConfig() *BenchmarkConfig {
 	flag.StringVar(&config.DatabaseConfig.Pass, "pass", "", "database password (default: empty)")
 	flag.StringVar(&config.DatabaseConfig.Database, "db", "mybench", "database name (default: mybench)")
 	flag.IntVar(&config.DatabaseConfig.ConnectionMultiplier, "connectionmultiplier", 1, "number of database connections per parallel worker (default: 1)")
+	flag.BoolVar(&config.DatabaseConfig.ClientMultiStatements, "clientmultistatements", false, "Enable support for CLIENT_MULTI_STATEMENTS on the connection")
 
 	flag.Float64Var(&config.RateControlConfig.EventRate, "eventrate", 1000, "target event rate of the benchmark in requests per second (default: 1000)")
 	flag.IntVar(&config.RateControlConfig.Concurrency, "concurrency", 0, "number of parallel workers to use during the benchmark (default: auto)")
