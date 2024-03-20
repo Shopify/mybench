@@ -21,5 +21,5 @@ require (
 	github.com/siddontang/go-log v0.0.0-20190221022429-1e957dd83bed // indirect
 	golang.org/x/exp v0.0.0-20221011111909-0220f59fc3e4 // indirect
 	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
+	gopkg.in/yaml.v3 v3.0.0 // indirect
 )
