@@ -1,6 +1,6 @@
 module github.com/Shopify/mybench
 
-go 1.19
+go 1.22.1
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2
