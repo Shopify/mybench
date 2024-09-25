@@ -51,7 +51,7 @@ func (c *PointSelect) NewContextData(conn *mybench.Connection) (MicroBenchContex
 	var err error
 	contextData := MicroBenchContextData{}
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE %s", c.table.Name, clause)
+	query := fmt.Sprintf("SELECT * FROM `%s` WHERE %s", c.table.Name, clause)
 	contextData.Statement, err = conn.Prepare(query)
 	return contextData, err
 }

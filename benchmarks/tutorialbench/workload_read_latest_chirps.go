@@ -13,7 +13,7 @@ type ReadLatestChirps struct {
 }
 
 func (w *ReadLatestChirps) Event(ctx mybench.WorkerContext[mybench.NoContextData]) error {
-	query := fmt.Sprintf("SELECT * FROM %s ORDER BY created_at DESC LIMIT 200", w.table.Name)
+	query := fmt.Sprintf("SELECT * FROM `%s` ORDER BY created_at DESC LIMIT 200", w.table.Name)
 	_, err := ctx.Conn.Execute(query)
 	return err
 }

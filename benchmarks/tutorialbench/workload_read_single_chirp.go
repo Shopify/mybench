@@ -25,7 +25,7 @@ func (w *ReadSingleChirp) Event(ctx mybench.WorkerContext[ReadSingleChirpContext
 func (w *ReadSingleChirp) NewContextData(conn *mybench.Connection) (ReadSingleChirpContext, error) {
 	var err error
 	ctx := ReadSingleChirpContext{}
-	ctx.stmt, err = conn.Prepare(fmt.Sprintf("SELECT * FROM %s WHERE id = ?", w.table.Name))
+	ctx.stmt, err = conn.Prepare(fmt.Sprintf("SELECT * FROM `%s` WHERE id = ?", w.table.Name))
 	return ctx, err
 }
 
