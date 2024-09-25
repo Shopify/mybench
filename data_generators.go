@@ -476,7 +476,7 @@ func NewUniqueStringGeneratorFromDatabase(databaseConfig DatabaseConfig, table, 
 	}
 	defer conn.Close()
 
-	query := fmt.Sprintf("SELECT MIN(CAST(SUBSTRING_INDEX(%s, '!', 1) AS UNSIGNED)) AS min_value, MAX(CAST(SUBSTRING_INDEX(%s, '!', 1) AS UNSIGNED)) AS current_value FROM %s.%s", column, column, databaseConfig.Database, table)
+	query := fmt.Sprintf("SELECT MIN(CAST(SUBSTRING_INDEX(`%s`, '!', 1) AS UNSIGNED)) AS min_value, MAX(CAST(SUBSTRING_INDEX(`%s`, '!', 1) AS UNSIGNED)) AS current_value FROM `%s`.`%s`", column, column, databaseConfig.Database, table)
 	res, err := conn.Execute(query)
 	if err != nil {
 		return nil, err
@@ -492,7 +492,7 @@ func NewUniqueStringGeneratorFromDatabase(databaseConfig DatabaseConfig, table, 
 		return nil, err
 	}
 
-	query = fmt.Sprintf("SELECT LENGTH(`%s`) FROM %s.%s LIMIT 1", column, databaseConfig.Database, table)
+	query = fmt.Sprintf("SELECT LENGTH(`%s`) FROM `%s`.`%s` LIMIT 1", column, databaseConfig.Database, table)
 	res, err = conn.Execute(query)
 	if err != nil {
 		return nil, err
@@ -694,7 +694,7 @@ func NewAutoIncrementGeneratorFromDatabase(databaseConfig DatabaseConfig, table,
 	}
 	defer conn.Close()
 
-	query := fmt.Sprintf("SELECT MIN(%s), MAX(%s) FROM %s.%s", column, column, databaseConfig.Database, table)
+	query := fmt.Sprintf("SELECT MIN(%s), MAX(%s) FROM`%s`.`%s`", column, column, databaseConfig.Database, table)
 	res, err := conn.Execute(query)
 	if err != nil {
 		return nil, err

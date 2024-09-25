@@ -38,7 +38,7 @@ func (c *BulkSelectIndexedOrder) NewContextData(conn *mybench.Connection) (Micro
 	var err error
 	contextData := MicroBenchContextData{}
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE idx2 = ? ORDER BY %s", c.table.Name, c.orderField)
+	query := fmt.Sprintf("SELECT * FROM `%s` WHERE idx2 = ? ORDER BY `%s`", c.table.Name, c.orderField)
 	contextData.Statement, err = conn.Prepare(query)
 	return contextData, err
 }

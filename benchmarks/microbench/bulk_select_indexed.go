@@ -36,7 +36,7 @@ func (c *BulkSelectIndexed) NewContextData(conn *mybench.Connection) (MicroBench
 	var err error
 	contextData := MicroBenchContextData{}
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE idx2 = ?", c.table.Name)
+	query := fmt.Sprintf("SELECT * FROM `%s` WHERE idx2 = ?", c.table.Name)
 	contextData.Statement, err = conn.Prepare(query)
 	return contextData, err
 }
