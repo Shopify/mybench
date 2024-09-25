@@ -53,7 +53,7 @@ func (cfg DatabaseConfig) CreateDatabaseIfNeeded() error {
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 	conn, err := client.Connect(addr, cfg.User, cfg.Pass, "")
 	if err == nil {
-		_, err = conn.Execute(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", cfg.Database))
+		_, err = conn.Execute(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`", cfg.Database))
 		conn.Close()
 	}
 
