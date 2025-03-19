@@ -71,10 +71,11 @@ func (cfg DatabaseConfig) Connection() (*Connection, error) {
 
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 	connList := make([]*client.Conn, cfg.ConnectionMultiplier)
-	var options []func(*client.Conn)
+	var options []client.Option
 	if cfg.ClientMultiStatements {
-		options = append(options, func(c *client.Conn) {
+		options = append(options, func(c *client.Conn) error {
 			c.SetCapability(mysql.CLIENT_MULTI_STATEMENTS)
+			return nil
 		})
 	}
 	for i := 0; i < cfg.ConnectionMultiplier; i++ {
