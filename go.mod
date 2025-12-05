@@ -7,7 +7,7 @@ require (
 	github.com/go-mysql-org/go-mysql v1.11.0
 	github.com/google/uuid v1.3.0
 	github.com/mattn/go-sqlite3 v1.14.13
-	github.com/sirupsen/logrus v1.8.1
+	github.com/sirupsen/logrus v1.8.3
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/atomic v1.11.0
 )
